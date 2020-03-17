@@ -68,9 +68,7 @@ func (t *Table) AddRow(row []string) bool {
 		if !t.readTableData {
 			for i := 0; i < len(t.columns); i++ {
 				col := &t.columns[i]
-				if col.Index >= len(row) {
-					continue // missing value
-				} else {
+				if col.Index < len(row) {
 					col.Label = row[col.Index]
 				}
 			}
@@ -106,7 +104,7 @@ func (t *Table) AddRow(row []string) bool {
 			return false
 		}
 	}
-	return true
+	return row[0][0] != '#'
 }
 
 func (t *Table) computeIndexes() {
@@ -150,6 +148,8 @@ func (t *Table) CreateMetric(row []string) interface{} {
 	}
 	return val
 }
+
+// TODO introduce recompute Indexes
 
 // // Column returns the first column of the supplied label or nil
 // func (t *Table) Column(label string) *TableColumn {

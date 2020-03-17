@@ -43,6 +43,7 @@ func processLines(reader *csv.Reader) {
 	for {
 		// Read each record from csv
 		row, err := reader.Read()
+		reader.FieldsPerRecord = 0 // every row can have different items
 		if err == io.EOF {
 			break
 		}
