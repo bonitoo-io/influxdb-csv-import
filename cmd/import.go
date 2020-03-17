@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io"
+	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -10,22 +14,43 @@ import (
 var importCmd = &cobra.Command{
 	Use:   "import",
 	Short: "Imports CSV files into InfluxDB",
-	Long:  `Imports CSV (query result) files into InfluxDB.`,
+	Long:  `Imports CSV (query result) file into InfluxDB.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("TODO run import")
+		fileName, _ := cmd.Flags().GetString("file")
+		var reader *csv.Reader
+		if len(fileName) > 0 {
+			file, err := os.Open(fileName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			reader = csv.NewReader(file)
+			defer file.Close()
+		} else {
+			reader = csv.NewReader(os.Stdin)
+		}
+		processLines(reader)
 	},
 }
+var table = Table{}
 
 func init() {
 	rootCmd.AddCommand(importCmd)
 
-	// Here you will define your flags and configuration settings.
+	importCmd.Flags().StringP("file", "f", "", "The path to the file to import")
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// importCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// importCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func processLines(reader *csv.Reader) {
+	for {
+		// Read each record from csv
+		row, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		if table.AddRow(row) {
+			fmt.Println(table.CreateMetric(row))
+		}
+	}
 }
