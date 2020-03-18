@@ -137,15 +137,22 @@ func Test_toLineProtocolValue(t *testing.T) {
 // Test_convert
 func Test_convert(t *testing.T) {
 	var tests = []struct {
-		value    string
 		dataType string
+		value    string
 		expect   string
-	}{}
+	}{
+		{"", "1", "1"},
+		{"long", "a", ""},
+		{"string", "a", `"a"`},
+	}
 
 	for i, test := range tests {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			// TODO
-			require.Equal(t, test.expect, test.value)
+			val, err := convert(test.value, test.dataType)
+			if err != nil && test.expect != "" {
+				require.Nil(t, err.Error())
+			}
+			require.Equal(t, test.expect, val)
 		})
 	}
 }
