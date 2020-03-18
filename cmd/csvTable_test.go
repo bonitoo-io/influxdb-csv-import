@@ -19,6 +19,7 @@ func readCsv(t *testing.T, data string) [][]string {
 			break
 		}
 		if err != nil {
+			t.Log("row: ", row)
 			t.Log(err)
 			t.Fail()
 		}
@@ -127,71 +128,90 @@ func Test_ignoreLeadingComment(t *testing.T) {
 // TestCsvData checks data that are writen in an annotated CSV file
 func TestCsvData(t *testing.T) {
 	var tests = []struct {
-		name  string
-		csv   string
-		lines []string
+		name string
+		csv  string
+		line string
 	}{
 		{
 			"simple1",
 			"_measurement,a,b\ncpu,1,1",
-			[]string{"cpu a=1,b=1"},
+			"cpu a=1,b=1",
 		},
 		{
 			"simple1b",
 			"_measurement,,a,b\ncpu,whatever,1,1",
-			[]string{"cpu a=1,b=1"},
+			"cpu a=1,b=1",
 		},
 		{
 			"simple2",
 			"_measurement\ncpu,1,1",
-			[]string{""}, // no fields present
+			"", // no fields present
 		},
 		{
 			"simple3",
 			"_time\n1,1",
-			[]string{""}, // no measurement present
+			"", // no measurement present
 		},
 		{
 			"annotated1",
 			"#linetype measurement,,\nmeasurement,a,b\ncpu,1,2",
-			[]string{"cpu a=1,b=2"},
+			"cpu a=1,b=2",
 		},
 		{
 			"annotated2",
 			"#linetype measurement,tag,field\nmeasurement,a,b\ncpu,1,2",
-			[]string{"cpu,a=1 b=2"},
+			"cpu,a=1 b=2",
 		},
 		{
 			"annotated3",
 			"#linetype measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2,3",
-			[]string{"cpu,a=1 time=3 2"},
+			"cpu,a=1 time=3 2",
 		},
 		{
-			"annotated3b",
+			"annotated3_detectedTime1",
 			"#linetype measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-01-10T10:10:10Z,3",
-			[]string{"cpu,a=1 time=3 1578651010000000000"},
+			"cpu,a=1 time=3 1578651010000000000",
+		},
+		{
+			"annotated3_detectedTime2",
+			"#linetype measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-01-10T10:10:10.0Z,3",
+			"cpu,a=1 time=3 1578651010000000000",
 		},
 		{
 			"annotated4",
 			"#linetype measurement,tag,ignore,field\nmeasurement,a,b,time\ncpu,1,2,3",
-			[]string{"cpu,a=1 time=3"},
+			"cpu,a=1 time=3",
 		},
 		{
 			"annotated5",
 			"#linetype measurement,tag,ignore,field\nmeasurement,a,b,time\ncpu,1,2,3",
-			[]string{"cpu,a=1 time=3"},
+			"cpu,a=1 time=3",
 		},
 		{
 			"annotated6",
 			"#linetype measurement,tag,ignore,field\n" +
 				"#linetypea tag,tag,\n" + // this must be ignored since it not a control comment
 				"measurement,a,b,time\ncpu,1,2,3",
-			[]string{"cpu,a=1 time=3"},
+			"cpu,a=1 time=3",
 		},
 		{
 			"annotated7",
-			"#linetype measurement,,\n#datatype ,dateTime:RFC3339Nano,\nmeasurement,a,b\ncpu,1,2",
-			[]string{"cpu a=1,b=2"},
+			"#linetype measurement,,\n#datatype ,dateTime:RFC3339Nano,\nmeasurement,a,b\ncpu,2020-01-10T10:10:10.0Z,2",
+			"cpu a=1578651010000000000,b=2",
+		},
+		{
+			"allTypes1",
+			"#datatype ,string,double,boolean,long,unsignedLong,duration,base64Binary,dateTime:RFC3339,dateTime:RFC3339Nano,\n" +
+				"_measurement,s,d,b,l,ul,dur,by,d1,d2,_time\n" +
+				`cpu,"str",1.0,true,1,1,1ms,YWFh,2020-01-10T10:10:10Z,2020-01-10T10:10:10Z,1`,
+			"cpu s=\"str\",d=1,b=true,l=1i,ul=1u,dur=1000000,by=YWFh,d1=1578651010000000000,d2=1578651010000000000 1",
+		},
+		{
+			"allTypes_escaped",
+			"#datatype ,string,string,,,,\n" +
+				`_measurement,s1,s2,"a,","b ",c=` + "\n" +
+				`"cpu, ","""",\,a,b,c`,
+			`cpu\,\  s1="\"",s2="\\",a\,=a,b\ =b,c\==c`,
 		},
 	}
 
@@ -204,13 +224,13 @@ func TestCsvData(t *testing.T) {
 				rowProcessed := table.AddRow(row)
 				if rowProcessed {
 					line, err := table.CreateLine(row)
-					if err != nil && line != "" {
+					if err != nil && test.line != "" {
 						require.Nil(t, err.Error())
 					}
 					lines = append(lines, line)
 				}
 			}
-			require.Equal(t, test.lines, lines)
+			require.Equal(t, []string{test.line}, lines)
 		})
 	}
 }

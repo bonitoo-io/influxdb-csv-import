@@ -45,7 +45,7 @@ func escapeTag(val string) string {
 }
 func quoteValue(val string) string {
 	for i := 0; i < len(val); i++ {
-		if val[i] == ',' || val[i] == ' ' || val[i] == '=' {
+		if val[i] == '"' || val[i] == '\\' {
 			return "\"" + replaceQuoted.Replace(val) + "\""
 		}
 	}
@@ -59,11 +59,7 @@ func toTypedValue(val string, dataType string) (interface{}, error) {
 	case timeDatatypeRFC:
 		return time.Parse(time.RFC3339, val)
 	case timeDatatypeRFCNano:
-		nsec, err := strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		return time.Unix(0, nsec), nil
+		return time.Parse(time.RFC3339Nano, val)
 	case durationDatatype:
 		return time.ParseDuration(val)
 	case doubleDatatype:
@@ -79,8 +75,10 @@ func toTypedValue(val string, dataType string) (interface{}, error) {
 		return strconv.ParseInt(val, 10, 64)
 	case uLongDatatype:
 		return strconv.ParseUint(val, 10, 64)
+	case base64BinaryDataType:
+		return base64.StdEncoding.DecodeString(val)
 	default:
-		return nil, fmt.Errorf("%s has unknown data type %s", val, dataType)
+		return nil, fmt.Errorf("%s has unsupported data type %s", val, dataType)
 	}
 }
 
@@ -120,6 +118,8 @@ func toLineProtocolValue(value interface{}) (string, error) {
 		return "false", nil
 	case time.Time:
 		return strconv.FormatInt(v.UnixNano(), 10), nil
+	case time.Duration:
+		return strconv.FormatInt(v.Nanoseconds(), 10), nil
 	default:
 		return "", fmt.Errorf("unsupported value type: %T", v)
 	}

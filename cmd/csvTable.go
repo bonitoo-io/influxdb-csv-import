@@ -239,10 +239,10 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 		var dataType = t.cachedTime.DataType
 		if timeVal != "" && dataType == "" {
 			//try to detect data type
-			if strings.Index(timeVal, "-") >= 0 {
-				dataType = "dateTime:RFC3339"
-			} else {
+			if strings.Index(timeVal, ".") >= 0 {
 				dataType = "dateTime:RFC3339Nano"
+			} else if strings.Index(timeVal, "-") >= 0 {
+				dataType = "dateTime:RFC3339"
 			}
 		}
 		timeVal, err := convert(timeVal, dataType)
