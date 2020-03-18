@@ -31,7 +31,6 @@ var importCmd = &cobra.Command{
 		processLines(reader)
 	},
 }
-var table = Table{}
 
 func init() {
 	rootCmd.AddCommand(importCmd)
@@ -40,6 +39,7 @@ func init() {
 }
 
 func processLines(reader *csv.Reader) {
+	var table = Table{}
 	for {
 		// Read each record from csv
 		row, err := reader.Read()
@@ -51,7 +51,7 @@ func processLines(reader *csv.Reader) {
 			log.Fatal(err)
 		}
 		if table.AddRow(row) {
-			fmt.Println(table.CreateMetric(row))
+			fmt.Println(table.CreateLine(row))
 		}
 	}
 }

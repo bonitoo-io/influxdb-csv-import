@@ -16,6 +16,21 @@
         "-f",
         "/home/zavora/Desktop/influx/2020-02-25-14-22_chronograf_data.csv/2020-02-25-14-22_chronograf_data.csv"
       ]
+    },
+    {
+      "name": "Test",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "remotePath": "",
+      "port": 2346,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/csvTable_test.go",
+      "env": {},
+      "args": [
+         "../..."
+          ],
+      "showLog": true
     }
   ]
 }
