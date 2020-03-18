@@ -197,34 +197,61 @@ func (t *Table) recomputeIndexes() {
 func (t *Table) CreateLine(row []string) (line string, err error) {
 	t.computeIndexes()
 
-	// TODO escape values
 	if t.cachedMeasurement == nil {
-		return "", errors.New("no measurement column identified")
+		return "", errors.New("no measurement column found")
 	}
-	val := row[t.cachedMeasurement.Index]
+	val := escapeMeasurement(row[t.cachedMeasurement.Index])
 	for _, tag := range t.cachedTags {
-		val += "," + tag.Label + "=" + row[tag.Index]
+		val += "," + escapeTag(tag.Label) + "=" + escapeTag(row[tag.Index])
 	}
 	val += " "
 	fieldAdded := false
-	if t.cachedFieldName != nil {
-		val += row[t.cachedFieldName.Index] + "=" + row[t.cachedFieldValue.Index]
-		fieldAdded = true
+	if t.cachedFieldName != nil && t.cachedFieldValue != nil {
+		converted, err := convert(row[t.cachedFieldValue.Index], t.cachedFieldValue.DataType)
+		if err != nil {
+			return "", err
+		}
+		if len(converted) > 0 {
+			val += escapeTag(row[t.cachedFieldName.Index]) + "=" + converted
+			fieldAdded = true
+		}
 	}
 	for _, field := range t.cachedFields {
-		if !fieldAdded {
-			fieldAdded = true
-		} else {
-			val += ","
+		converted, err := convert(row[field.Index], field.DataType)
+		if err != nil {
+			return "", err
 		}
-		val += field.Label + "=" + row[field.Index]
+		if len(converted) > 0 {
+			if !fieldAdded {
+				fieldAdded = true
+			} else {
+				val += ","
+			}
+			val += escapeTag(field.Label) + "=" + converted
+		}
 	}
 	if !fieldAdded {
 		return "", errors.New("no field columns found")
 	}
 
 	if t.cachedTime != nil {
-		val += " " + row[t.cachedTime.Index]
+		timeVal := row[t.cachedTime.Index]
+		var dataType = t.cachedTime.DataType
+		if timeVal != "" && dataType == "" {
+			//try to detect data type
+			if strings.Index(timeVal, "-") >= 0 {
+				dataType = "dateTime:RFC3339"
+			} else {
+				dataType = "dateTime:RFC3339Nano"
+			}
+		}
+		timeVal, err := convert(timeVal, dataType)
+		if err != nil {
+			return "", err
+		}
+		if timeVal != "" {
+			val += " " + timeVal
+		}
 	}
 	return val, nil
 }

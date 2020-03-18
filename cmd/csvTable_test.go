@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/csv"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -47,10 +46,10 @@ func TestQueryResult(t *testing.T) {
 #unre`
 
 	var lineProtocolQueryResult = []string{
-		"cpu,cpu=cpu1,host=rsavage.prod time_steal=0 2020-02-25T22:17:57Z",
-		"cpu,cpu=cpu1,host=rsavage.prod time_steal=0 2020-02-25T22:18:07Z",
-		"cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.7263631815907954 2020-02-25T22:18:01Z",
-		"cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 2020-02-25T22:18:11Z",
+		"cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669077000000000",
+		"cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669087000000000",
+		"cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.7263631815907954 1582669081000000000",
+		"cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000000000",
 	}
 
 	table := Table{}
@@ -58,13 +57,12 @@ func TestQueryResult(t *testing.T) {
 	lineProtocolIndex := 0
 	for i, row := range rows {
 		rowProcessed := table.AddRow(row)
-		fmt.Println(row)
 		if i%6 < 4 {
 			require.Equal(t, rowProcessed, false, "row %d", i)
 		} else {
 			require.Equal(t, rowProcessed, true, "row %d", i)
 			line, _ := table.CreateLine(row)
-			require.Equal(t, line, lineProtocolQueryResult[lineProtocolIndex])
+			require.Equal(t, lineProtocolQueryResult[lineProtocolIndex], line)
 			lineProtocolIndex++
 			if i%6 == 4 {
 				// verify table
@@ -169,6 +167,11 @@ func TestCsvData(t *testing.T) {
 			[]string{"cpu,a=1 time=3 2"},
 		},
 		{
+			"annotated3b",
+			"#linetype measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-01-10T10:10:10Z,3",
+			[]string{"cpu,a=1 time=3 1578651010000000000"},
+		},
+		{
 			"annotated4",
 			"#linetype measurement,tag,ignore,field\nmeasurement,a,b,time\ncpu,1,2,3",
 			[]string{"cpu,a=1 time=3"},
@@ -179,11 +182,60 @@ func TestCsvData(t *testing.T) {
 			[]string{"cpu,a=1 time=3"},
 		},
 		{
-			"annotated5",
+			"annotated6",
 			"#linetype measurement,tag,ignore,field\n" +
 				"#linetypea tag,tag,\n" + // this must be ignored since it not a control comment
 				"measurement,a,b,time\ncpu,1,2,3",
 			[]string{"cpu,a=1 time=3"},
+		},
+		{
+			"annotated7",
+			"#linetype measurement,,\n#datatype ,dateTime:RFC3339Nano,\nmeasurement,a,b\ncpu,1,2",
+			[]string{"cpu a=1,b=2"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rows := readCsv(t, test.csv)
+			table := Table{}
+			var lines []string
+			for _, row := range rows {
+				rowProcessed := table.AddRow(row)
+				if rowProcessed {
+					line, err := table.CreateLine(row)
+					if err != nil && line != "" {
+						require.Nil(t, err.Error())
+					}
+					lines = append(lines, line)
+				}
+			}
+			require.Equal(t, test.lines, lines)
+		})
+	}
+}
+
+// TestCsvData_dataErrors validates table data errors
+func TestCsvData_dataErrors(t *testing.T) {
+	var tests = []struct {
+		name string
+		csv  string
+	}{
+		{
+			"error_1_is_not_dateTime:RFC3339",
+			"#linetype measurement,,\n#datatype ,dateTime:RFC3339,\nmeasurement,a,b\ncpu,1,2",
+		},
+		{
+			"error_a_fieldValue_is_not_long",
+			"#linetype measurement,,\n#datatype ,long,\nmeasurement,_value,_field\ncpu,a,count",
+		},
+		{
+			"error_a_is_not_long",
+			"#linetype measurement,,\n#datatype ,long,\nmeasurement,a,b\ncpu,a,2",
+		},
+		{
+			"error_time_is_not_time",
+			"#linetype measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-10,3",
 		},
 	}
 
@@ -198,10 +250,14 @@ func TestCsvData(t *testing.T) {
 				if rowProcessed {
 					line, err := table.CreateLine(row)
 					lines = append(lines, line)
-					errors = append(errors, err)
+					if err != nil {
+						errors = append(errors, err)
+					}
 				}
 			}
-			require.Equal(t, test.lines, lines)
+			require.Equal(t, 1, len(errors))
+			// fmt.Println(errors[0])
+			require.NotNil(t, errors[0].Error())
 		})
 	}
 }
