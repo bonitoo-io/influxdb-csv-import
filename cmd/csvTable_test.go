@@ -204,7 +204,7 @@ func TestCsvData(t *testing.T) {
 			"#datatype ,string,double,boolean,long,unsignedLong,duration,base64Binary,dateTime:RFC3339,dateTime:RFC3339Nano,\n" +
 				"_measurement,s,d,b,l,ul,dur,by,d1,d2,_time\n" +
 				`cpu,"str",1.0,true,1,1,1ms,YWFh,2020-01-10T10:10:10Z,2020-01-10T10:10:10Z,1`,
-			"cpu s=\"str\",d=1,b=true,l=1i,ul=1u,dur=1000000,by=YWFh,d1=1578651010000000000,d2=1578651010000000000 1",
+			"cpu s=\"str\",d=1,b=true,l=1i,ul=1u,dur=1000000i,by=YWFh,d1=1578651010000000000,d2=1578651010000000000 1",
 		},
 		{
 			"allTypes_escaped",

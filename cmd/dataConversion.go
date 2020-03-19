@@ -119,7 +119,7 @@ func toLineProtocolValue(value interface{}) (string, error) {
 	case time.Time:
 		return strconv.FormatInt(v.UnixNano(), 10), nil
 	case time.Duration:
-		return strconv.FormatInt(v.Nanoseconds(), 10), nil
+		return strconv.FormatInt(v.Nanoseconds(), 10) + "i", nil
 	default:
 		return "", fmt.Errorf("unsupported value type: %T", v)
 	}

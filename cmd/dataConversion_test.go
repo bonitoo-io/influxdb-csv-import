@@ -119,7 +119,7 @@ func Test_toLineProtocolValue(t *testing.T) {
 		{true, "true"},
 		{false, "false"},
 		{epochTime, "0"},
-		{time.Duration(100), "100"},
+		{time.Duration(100), "100i"},
 		{struct{}{}, ""},
 	}
 
