@@ -197,14 +197,22 @@ func (t *Table) recomputeIndexes() {
 func (t *Table) CreateLine(row []string) (line string, err error) {
 	t.computeIndexes()
 
+	builder := strings.Builder{}
+	builder.Grow(100)
+
 	if t.cachedMeasurement == nil {
 		return "", errors.New("no measurement column found")
 	}
-	val := escapeMeasurement(row[t.cachedMeasurement.Index])
+	builder.WriteString(escapeMeasurement(row[t.cachedMeasurement.Index]))
 	for _, tag := range t.cachedTags {
-		val += "," + escapeTag(tag.Label) + "=" + escapeTag(row[tag.Index])
+		if len(row[tag.Index]) > 0 {
+			builder.WriteString(",")
+			builder.WriteString(escapeTag(tag.Label))
+			builder.WriteString("=")
+			builder.WriteString(escapeTag(row[tag.Index]))
+		}
 	}
-	val += " "
+	builder.WriteString(" ")
 	fieldAdded := false
 	if t.cachedFieldName != nil && t.cachedFieldValue != nil {
 		converted, err := convert(row[t.cachedFieldValue.Index], t.cachedFieldValue.DataType)
@@ -212,7 +220,9 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 			return "", err
 		}
 		if len(converted) > 0 {
-			val += escapeTag(row[t.cachedFieldName.Index]) + "=" + converted
+			builder.WriteString(escapeTag(row[t.cachedFieldName.Index]))
+			builder.WriteString("=")
+			builder.WriteString(converted)
 			fieldAdded = true
 		}
 	}
@@ -225,9 +235,11 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 			if !fieldAdded {
 				fieldAdded = true
 			} else {
-				val += ","
+				builder.WriteString(",")
 			}
-			val += escapeTag(field.Label) + "=" + converted
+			builder.WriteString(escapeTag(field.Label))
+			builder.WriteString("=")
+			builder.WriteString(converted)
 		}
 	}
 	if !fieldAdded {
@@ -250,10 +262,11 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 			return "", err
 		}
 		if timeVal != "" {
-			val += " " + timeVal
+			builder.WriteString(" ")
+			builder.WriteString(timeVal)
 		}
 	}
-	return val, nil
+	return builder.String(), nil
 }
 
 // Column returns the first column of the supplied label or nil

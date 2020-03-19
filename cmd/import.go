@@ -51,7 +51,12 @@ func processLines(reader *csv.Reader) {
 			log.Fatal(err)
 		}
 		if table.AddRow(row) {
-			fmt.Println(table.CreateLine(row))
+			line, err := table.CreateLine(row)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			} else {
+				fmt.Println(line)
+			}
 		}
 	}
 }
