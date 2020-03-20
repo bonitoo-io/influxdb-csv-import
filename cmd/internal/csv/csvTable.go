@@ -13,6 +13,14 @@ const (
 	labelMeasurement = "_measurement"
 )
 
+const (
+	linePartIgnored = iota + 1
+	linePartMeasurement
+	linePartTag
+	linePartField
+	linePartTime
+)
+
 type headerDescriptor struct {
 	label string
 	flag  uint8
@@ -32,7 +40,9 @@ func ignoreLeadingComment(value string) string {
 
 var headerTypes = []headerDescriptor{
 	{"#group", 1, func(column *CsvTableColumn, value string) error {
-		column.Group = strings.HasSuffix(value, "true")
+		if strings.HasSuffix(value, "true") {
+			column.LinePart = linePartTag
+		}
 		return nil
 	}},
 	{"#datatype", 2, func(column *CsvTableColumn, value string) error {
@@ -43,18 +53,20 @@ var headerTypes = []headerDescriptor{
 		column.DefaultValue = ignoreLeadingComment(value)
 		return nil
 	}},
-	{"#linetype", 8, func(column *CsvTableColumn, value string) error {
+	{"#linepart", 8, func(column *CsvTableColumn, value string) error {
 		val := ignoreLeadingComment(value)
 		switch {
 		case val == "tag":
-			column.Group = true
+			column.LinePart = linePartTag
 		case strings.HasPrefix(val, "ignore"):
-			column.Ignored = true
+			column.LinePart = linePartIgnored
 		case val == "time":
-			column.Label = labelTime
+			column.LinePart = linePartTime
 		case val == "measurement":
-			column.Label = labelMeasurement
-		case val == "field" || val == "":
+			column.LinePart = linePartMeasurement
+		case val == "field":
+			column.LinePart = linePartField
+		case val == "":
 			// detect line type
 		default:
 			return fmt.Errorf("unsupported line type: %s", value)
@@ -63,16 +75,14 @@ var headerTypes = []headerDescriptor{
 	}},
 }
 
-// CsvTableColumn represents metadata of a flux <a href="http://bit.ly/flux-spec#table">table</a>.
+// CsvTableColumn represents metadata of a csv column
 type CsvTableColumn struct {
 	// label such as "_start", "_stop", "_time"
 	Label string
 	// "string", "long", "dateTime:RFC3339" ...
 	DataType string
-	// table's group/tag indicator
-	Group bool
-	// is this column ignored
-	Ignored bool
+	// column's line part (0 means not determined), see linePart constants
+	LinePart int
 	// default value to be used for rows where value is an empty string.
 	DefaultValue string
 	// index of this column in the table row
@@ -174,15 +184,15 @@ func (t *CsvTable) recomputeIndexes() {
 	t.cachedFieldValue = nil
 	t.cachedTags = nil
 	t.cachedFields = nil
-	canContainFields := t.Column(labelFieldName) == nil
+	defaultIsField := t.Column(labelFieldName) == nil
 	for i := 0; i < len(t.columns); i++ {
 		col := t.columns[i]
 		switch {
-		case len(strings.TrimSpace(col.Label)) == 0 || col.Ignored:
+		case len(strings.TrimSpace(col.Label)) == 0 || col.LinePart == linePartIgnored:
 			break
-		case col.Label == labelMeasurement:
+		case col.Label == labelMeasurement || col.LinePart == linePartMeasurement:
 			t.cachedMeasurement = &col
-		case col.Label == labelTime:
+		case col.Label == labelTime || col.LinePart == linePartTime:
 			t.cachedTime = &col
 		case col.Label == labelFieldName:
 			t.cachedFieldName = &col
@@ -190,10 +200,12 @@ func (t *CsvTable) recomputeIndexes() {
 			t.cachedFieldValue = &col
 		case col.Label[0] == '_':
 			break
-		case col.Group:
+		case col.LinePart == linePartTag:
 			t.cachedTags = append(t.cachedTags, col)
+		case col.LinePart == linePartField:
+			t.cachedFields = append(t.cachedFields, col)
 		default:
-			if canContainFields {
+			if defaultIsField {
 				t.cachedFields = append(t.cachedFields, col)
 			}
 		}
