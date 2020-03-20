@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 
+	internalCsv "bonitoo-io/influxdb-csv-import/cmd/internal/csv"
+
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +41,7 @@ func init() {
 }
 
 func processLines(reader *csv.Reader) {
-	var table = CsvTable{}
+	var table = internalCsv.CsvTable{}
 	lineNumber := 0
 	for {
 		// Read each record from csv
@@ -55,7 +57,7 @@ func processLines(reader *csv.Reader) {
 		if table.AddRow(row) {
 			line, err := table.CreateLine(row)
 			if err != nil {
-				log.Printf("ERROR line #%d: %v\n", lineNumber, err)
+				log.Printf("ERROR in line #%d: %v\n", lineNumber, err)
 			} else {
 				fmt.Println(line)
 			}
