@@ -23,6 +23,28 @@ const (
 	timeDatatypeRFCNano  = "dateTime:RFC3339Nano"
 )
 
+var supportedDataTypes map[string]struct{}
+
+func init() {
+	supportedDataTypes = make(map[string]struct{}, 10)
+	supportedDataTypes[stringDatatype] = struct{}{}
+	supportedDataTypes[doubleDatatype] = struct{}{}
+	supportedDataTypes[boolDatatype] = struct{}{}
+	supportedDataTypes[longDatatype] = struct{}{}
+	supportedDataTypes[uLongDatatype] = struct{}{}
+	supportedDataTypes[durationDatatype] = struct{}{}
+	supportedDataTypes[base64BinaryDataType] = struct{}{}
+	supportedDataTypes[timeDatatypeRFC] = struct{}{}
+	supportedDataTypes[timeDatatypeRFCNano] = struct{}{}
+	supportedDataTypes[""] = struct{}{}
+}
+
+// IsTypeSupported returns true if the data type is supported
+func IsTypeSupported(dataType string) bool {
+	_, supported := supportedDataTypes[dataType]
+	return supported
+}
+
 var replaceMeasurement *strings.Replacer = strings.NewReplacer(",", "\\,", " ", "\\ ")
 var replaceTag *strings.Replacer = strings.NewReplacer(",", "\\,", " ", "\\ ", "=", "\\=")
 var replaceQuoted *strings.Replacer = strings.NewReplacer("\"", "\\\"", "\\", "\\\\")

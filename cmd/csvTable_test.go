@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/csv"
 	"io"
+	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -67,19 +70,21 @@ func TestQueryResult(t *testing.T) {
 			lineProtocolIndex++
 			if i%6 == 4 {
 				// verify table
-				require.Equal(t, len(table.columns), 10)
+				require.GreaterOrEqual(t, len(table.columns), 10)
 				require.Equal(t, table.columns, table.Columns())
 				for j, col := range table.columns {
-					require.Equal(t, col.Index, j+1)
-					require.Equal(t, col.Label, rows[i-1][j+1])
-					if len(rows[i-2]) > j+1 {
-						require.Equal(t, col.DefaultValue, rows[i-2][j+1])
-					} else {
-						// some traling data are missing
-						require.Equal(t, col.DefaultValue, "")
+					if j > 0 {
+						require.Equal(t, col.Index, j)
+						require.Equal(t, col.Label, rows[i-1][j])
+						if len(rows[i-2]) > j {
+							require.Equal(t, col.DefaultValue, rows[i-2][j])
+						} else {
+							// some traling data are missing
+							require.Equal(t, col.DefaultValue, "")
+						}
+						require.Equal(t, col.DataType, rows[i-3][j])
+						require.Equal(t, col.Group, rows[i-4][j] == "true")
 					}
-					require.Equal(t, col.DataType, rows[i-3][j+1])
-					require.Equal(t, col.Group, rows[i-4][j+1] == "true")
 				}
 				// verify cached values
 				table.computeIndexes()
@@ -257,6 +262,18 @@ func TestCsvData_dataErrors(t *testing.T) {
 			"error_time_is_not_time",
 			"#linetype measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-10,3",
 		},
+		{
+			"error_no_measurement",
+			"#datatype ,\ncol1,col2\n1,2",
+		},
+		{
+			"error_unsupportedFieldDataType",
+			"#datatype ,whatever\n_measurement,col2\na,2",
+		},
+		{
+			"error_unsupportedFieldValueDataType",
+			"#datatype ,,whatever\n_measurement,_field,_value\na,1,2",
+		},
 	}
 
 	for _, test := range tests {
@@ -278,6 +295,48 @@ func TestCsvData_dataErrors(t *testing.T) {
 			require.Equal(t, 1, len(errors))
 			// fmt.Println(errors[0])
 			require.NotNil(t, errors[0].Error())
+		})
+	}
+}
+
+// TestCsvData_dataErrors validates table data errors
+func TestCsvData_logWarnings(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	var tests = []struct {
+		name string
+		csv  string
+		log  string
+	}{
+		{
+			"warning_unsupportedLineType",
+			"#lineType ,,whatever\n_measurement,_field,_value\na,1,2",
+			"unsupported line type: whatever",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			buf.Reset()
+			rows := readCsv(t, test.csv)
+			table := CsvTable{}
+			for _, row := range rows {
+				rowProcessed := table.AddRow(row)
+				if rowProcessed {
+					_, err := table.CreateLine(row)
+					if err != nil {
+						t.Fail()
+					}
+				}
+			}
+			out := buf.String()
+			warningIndex := strings.Index(out, "WARNING:")
+			require.Greater(t, warningIndex, 0)
+			require.Equal(t, test.log, out[warningIndex+len("WARNING:")+1:len(out)-1])
 		})
 	}
 }

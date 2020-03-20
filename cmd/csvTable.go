@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"errors"
+	"fmt"
+	"log"
 	"strings"
 )
 
@@ -15,7 +16,7 @@ const (
 type headerDescriptor struct {
 	label string
 	flag  uint8
-	setup func(column *CsvTableColumn, value string)
+	setup func(column *CsvTableColumn, value string) error
 }
 
 func ignoreLeadingComment(value string) string {
@@ -30,16 +31,19 @@ func ignoreLeadingComment(value string) string {
 }
 
 var headerTypes = []headerDescriptor{
-	{"#group", 1, func(column *CsvTableColumn, value string) {
+	{"#group", 1, func(column *CsvTableColumn, value string) error {
 		column.Group = strings.HasSuffix(value, "true")
+		return nil
 	}},
-	{"#datatype", 2, func(column *CsvTableColumn, value string) {
+	{"#datatype", 2, func(column *CsvTableColumn, value string) error {
 		column.DataType = ignoreLeadingComment(value)
+		return nil
 	}},
-	{"#default", 4, func(column *CsvTableColumn, value string) {
+	{"#default", 4, func(column *CsvTableColumn, value string) error {
 		column.DefaultValue = ignoreLeadingComment(value)
+		return nil
 	}},
-	{"#linetype", 8, func(column *CsvTableColumn, value string) {
+	{"#linetype", 8, func(column *CsvTableColumn, value string) error {
 		val := ignoreLeadingComment(value)
 		switch {
 		case val == "tag":
@@ -50,7 +54,12 @@ var headerTypes = []headerDescriptor{
 			column.Label = labelTime
 		case val == "measurement":
 			column.Label = labelMeasurement
+		case val == "field" || val == "":
+			// detect line type
+		default:
+			return fmt.Errorf("unsupported line type: %s", value)
 		}
+		return nil
 	}},
 }
 
@@ -117,22 +126,17 @@ func (t *CsvTable) AddRow(row []string) bool {
 	for i := 0; i < len(headerTypes); i++ {
 		supportedHeader := &headerTypes[i]
 		if strings.HasPrefix(strings.ToLower(row[0]), supportedHeader.label) {
-			var firstColumnIndex int = 0
-			if len(supportedHeader.label) == len(row[0]) {
-				firstColumnIndex = 1
-			} else {
-				if row[0][len(supportedHeader.label)] != ' ' {
-					continue // not a comment from the supported header
-				}
+			if len(row[0]) > len(supportedHeader.label) && row[0][len(supportedHeader.label)] != ' ' {
+				continue // not a comment from the supported header
 			}
 			t.indexed = false
 			t.readTableData = false
 			// create new columns when data change (overriding headers or no headers)
 			if t.partBits == 0 || t.partBits&supportedHeader.flag == 1 {
 				t.partBits = supportedHeader.flag
-				t.columns = make([]CsvTableColumn, len(row)-firstColumnIndex)
-				for i := 0; i < len(row)-firstColumnIndex; i++ {
-					t.columns[i].Index = i + firstColumnIndex
+				t.columns = make([]CsvTableColumn, len(row))
+				for i := 0; i < len(row); i++ {
+					t.columns[i].Index = i
 				}
 			} else {
 				t.partBits = t.partBits | supportedHeader.flag
@@ -142,7 +146,10 @@ func (t *CsvTable) AddRow(row []string) bool {
 				if col.Index >= len(row) {
 					continue // missing value
 				} else {
-					supportedHeader.setup(col, row[col.Index])
+					err := supportedHeader.setup(col, row[col.Index])
+					if err != nil {
+						log.Println("WARNING:", err)
+					}
 				}
 			}
 
@@ -152,10 +159,12 @@ func (t *CsvTable) AddRow(row []string) bool {
 	return row[0][0] != '#'
 }
 
-func (t *CsvTable) computeIndexes() {
+func (t *CsvTable) computeIndexes() bool {
 	if !t.indexed {
 		t.recomputeIndexes()
+		return true
 	}
+	return false
 }
 
 func (t *CsvTable) recomputeIndexes() {
@@ -206,10 +215,20 @@ func (t *CsvTable) CreateLine(row []string) (line string, err error) {
 
 // AppendLine appends a protocol to the supplied builder or returns non-nil error
 func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
-	t.computeIndexes()
+	if t.computeIndexes() {
+		// validate column data types
+		if t.cachedFieldValue != nil && !IsTypeSupported(t.cachedFieldValue.DataType) {
+			return fmt.Errorf("column '%s': data type '%s' is not supported", t.cachedFieldValue.Label, t.cachedFieldValue.DataType)
+		}
+		for _, c := range t.cachedFields {
+			if !IsTypeSupported(c.DataType) {
+				return fmt.Errorf("column '%s': data type '%s' is not supported", c.Label, c.DataType)
+			}
+		}
+	}
 
 	if t.cachedMeasurement == nil {
-		return errors.New("no measurement column found")
+		return fmt.Errorf("no measurement column found (columns: %d)", len(t.columns))
 	}
 	builder.WriteString(escapeMeasurement(row[t.cachedMeasurement.Index]))
 	for _, tag := range t.cachedTags {
@@ -251,7 +270,7 @@ func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
 		}
 	}
 	if !fieldAdded {
-		return errors.New("no field columns found")
+		return fmt.Errorf("no field column found (columns: %d)", len(t.columns))
 	}
 
 	if t.cachedTime != nil {

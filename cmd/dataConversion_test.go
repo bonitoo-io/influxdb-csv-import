@@ -156,3 +156,18 @@ func Test_convert(t *testing.T) {
 		})
 	}
 }
+
+// Test_IsTypeSupported
+func Test_IsTypeSupported(t *testing.T) {
+	require.Equal(t, IsTypeSupported(stringDatatype), true)
+	require.Equal(t, IsTypeSupported(doubleDatatype), true)
+	require.Equal(t, IsTypeSupported(boolDatatype), true)
+	require.Equal(t, IsTypeSupported(longDatatype), true)
+	require.Equal(t, IsTypeSupported(uLongDatatype), true)
+	require.Equal(t, IsTypeSupported(durationDatatype), true)
+	require.Equal(t, IsTypeSupported(base64BinaryDataType), true)
+	require.Equal(t, IsTypeSupported(timeDatatypeRFC), true)
+	require.Equal(t, IsTypeSupported(timeDatatypeRFCNano), true)
+	require.Equal(t, IsTypeSupported(""), true)
+	require.Equal(t, IsTypeSupported(" "), false)
+}

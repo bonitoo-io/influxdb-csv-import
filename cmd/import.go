@@ -40,10 +40,12 @@ func init() {
 
 func processLines(reader *csv.Reader) {
 	var table = CsvTable{}
+	lineNumber := 0
 	for {
 		// Read each record from csv
 		row, err := reader.Read()
-		reader.FieldsPerRecord = 0 // every row can have different items
+		lineNumber++
+		reader.FieldsPerRecord = 0 // since every row can have different items
 		if err == io.EOF {
 			break
 		}
@@ -53,7 +55,7 @@ func processLines(reader *csv.Reader) {
 		if table.AddRow(row) {
 			line, err := table.CreateLine(row)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				log.Printf("ERROR line #%d: %v\n", lineNumber, err)
 			} else {
 				fmt.Println(line)
 			}
