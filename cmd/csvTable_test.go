@@ -53,7 +53,7 @@ func TestQueryResult(t *testing.T) {
 		"cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000000000",
 	}
 
-	table := Table{}
+	table := CsvTable{}
 	rows := readCsv(t, csvQueryResult)
 	lineProtocolIndex := 0
 	for i, row := range rows {
@@ -218,7 +218,7 @@ func TestCsvData(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			rows := readCsv(t, test.csv)
-			table := Table{}
+			table := CsvTable{}
 			var lines []string
 			for _, row := range rows {
 				rowProcessed := table.AddRow(row)
@@ -262,7 +262,7 @@ func TestCsvData_dataErrors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			rows := readCsv(t, test.csv)
-			table := Table{}
+			table := CsvTable{}
 			var lines []string
 			var errors []error
 			for _, row := range rows {

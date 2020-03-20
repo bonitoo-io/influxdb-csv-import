@@ -15,7 +15,7 @@ const (
 type headerDescriptor struct {
 	label string
 	flag  uint8
-	setup func(column *TableColumn, value string)
+	setup func(column *CsvTableColumn, value string)
 }
 
 func ignoreLeadingComment(value string) string {
@@ -30,16 +30,16 @@ func ignoreLeadingComment(value string) string {
 }
 
 var headerTypes = []headerDescriptor{
-	{"#group", 1, func(column *TableColumn, value string) {
+	{"#group", 1, func(column *CsvTableColumn, value string) {
 		column.Group = strings.HasSuffix(value, "true")
 	}},
-	{"#datatype", 2, func(column *TableColumn, value string) {
+	{"#datatype", 2, func(column *CsvTableColumn, value string) {
 		column.DataType = ignoreLeadingComment(value)
 	}},
-	{"#default", 4, func(column *TableColumn, value string) {
+	{"#default", 4, func(column *CsvTableColumn, value string) {
 		column.DefaultValue = ignoreLeadingComment(value)
 	}},
-	{"#linetype", 8, func(column *TableColumn, value string) {
+	{"#linetype", 8, func(column *CsvTableColumn, value string) {
 		val := ignoreLeadingComment(value)
 		switch {
 		case val == "tag":
@@ -54,8 +54,8 @@ var headerTypes = []headerDescriptor{
 	}},
 }
 
-// TableColumn represents metadata of a flux <a href="http://bit.ly/flux-spec#table">table</a>.
-type TableColumn struct {
+// CsvTableColumn represents metadata of a flux <a href="http://bit.ly/flux-spec#table">table</a>.
+type CsvTableColumn struct {
 	// label such as "_start", "_stop", "_time"
 	Label string
 	// "string", "long", "dateTime:RFC3339" ...
@@ -70,10 +70,10 @@ type TableColumn struct {
 	Index int
 }
 
-// Table gathers metadata about columns
-type Table struct {
+// CsvTable gathers metadata about columns
+type CsvTable struct {
 	// all Table columns
-	columns []TableColumn
+	columns []CsvTableColumn
 	// bitmap indicating presence of group, datatype and default comments
 	partBits uint8
 	// indicates that it is ready to read table data
@@ -83,22 +83,22 @@ type Table struct {
 
 	/* cached data */
 
-	cachedMeasurement *TableColumn
-	cachedTime        *TableColumn
-	cachedFieldName   *TableColumn
-	cachedFieldValue  *TableColumn
-	cachedFields      []TableColumn
-	cachedTags        []TableColumn
+	cachedMeasurement *CsvTableColumn
+	cachedTime        *CsvTableColumn
+	cachedFieldName   *CsvTableColumn
+	cachedFieldValue  *CsvTableColumn
+	cachedFields      []CsvTableColumn
+	cachedTags        []CsvTableColumn
 }
 
 // AddRow adds header, comment or data row
-func (t *Table) AddRow(row []string) bool {
+func (t *CsvTable) AddRow(row []string) bool {
 	// support just header with #
 	if len(row[0]) == 0 || row[0][0] != '#' {
 		if !t.readTableData {
 			if t.partBits == 0 {
 				// create table if it does not exist yet
-				t.columns = make([]TableColumn, len(row))
+				t.columns = make([]CsvTableColumn, len(row))
 				for i := 0; i < len(row); i++ {
 					t.columns[i].Index = i
 				}
@@ -130,7 +130,7 @@ func (t *Table) AddRow(row []string) bool {
 			// create new columns when data change (overriding headers or no headers)
 			if t.partBits == 0 || t.partBits&supportedHeader.flag == 1 {
 				t.partBits = supportedHeader.flag
-				t.columns = make([]TableColumn, len(row)-firstColumnIndex)
+				t.columns = make([]CsvTableColumn, len(row)-firstColumnIndex)
 				for i := 0; i < len(row)-firstColumnIndex; i++ {
 					t.columns[i].Index = i + firstColumnIndex
 				}
@@ -152,13 +152,13 @@ func (t *Table) AddRow(row []string) bool {
 	return row[0][0] != '#'
 }
 
-func (t *Table) computeIndexes() {
+func (t *CsvTable) computeIndexes() {
 	if !t.indexed {
 		t.recomputeIndexes()
 	}
 }
 
-func (t *Table) recomputeIndexes() {
+func (t *CsvTable) recomputeIndexes() {
 	t.cachedMeasurement = nil
 	t.cachedTime = nil
 	t.cachedFieldName = nil
@@ -193,15 +193,23 @@ func (t *Table) recomputeIndexes() {
 	t.indexed = true
 }
 
-// CreateLine produces a protocol line of the supplied row or nil
-func (t *Table) CreateLine(row []string) (line string, err error) {
-	t.computeIndexes()
-
+// CreateLine produces a protocol line of the supplied row or returned error
+func (t *CsvTable) CreateLine(row []string) (line string, err error) {
 	builder := strings.Builder{}
 	builder.Grow(100)
+	err = t.AppendLine(&builder, row)
+	if err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+// AppendLine appends a protocol to the supplied builder or returns non-nil error
+func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
+	t.computeIndexes()
 
 	if t.cachedMeasurement == nil {
-		return "", errors.New("no measurement column found")
+		return errors.New("no measurement column found")
 	}
 	builder.WriteString(escapeMeasurement(row[t.cachedMeasurement.Index]))
 	for _, tag := range t.cachedTags {
@@ -217,7 +225,7 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 	if t.cachedFieldName != nil && t.cachedFieldValue != nil {
 		converted, err := convert(row[t.cachedFieldValue.Index], t.cachedFieldValue.DataType)
 		if err != nil {
-			return "", err
+			return err
 		}
 		if len(converted) > 0 {
 			builder.WriteString(escapeTag(row[t.cachedFieldName.Index]))
@@ -229,7 +237,7 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 	for _, field := range t.cachedFields {
 		converted, err := convert(row[field.Index], field.DataType)
 		if err != nil {
-			return "", err
+			return err
 		}
 		if len(converted) > 0 {
 			if !fieldAdded {
@@ -243,7 +251,7 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 		}
 	}
 	if !fieldAdded {
-		return "", errors.New("no field columns found")
+		return errors.New("no field columns found")
 	}
 
 	if t.cachedTime != nil {
@@ -259,18 +267,18 @@ func (t *Table) CreateLine(row []string) (line string, err error) {
 		}
 		timeVal, err := convert(timeVal, dataType)
 		if err != nil {
-			return "", err
+			return err
 		}
 		if timeVal != "" {
 			builder.WriteString(" ")
 			builder.WriteString(timeVal)
 		}
 	}
-	return builder.String(), nil
+	return nil
 }
 
 // Column returns the first column of the supplied label or nil
-func (t *Table) Column(label string) *TableColumn {
+func (t *CsvTable) Column(label string) *CsvTableColumn {
 	for i := 0; i < len(t.columns); i++ {
 		if t.columns[i].Label == label {
 			return &t.columns[i]
@@ -280,42 +288,42 @@ func (t *Table) Column(label string) *TableColumn {
 }
 
 // Columns returns available columns
-func (t *Table) Columns() []TableColumn {
+func (t *CsvTable) Columns() []CsvTableColumn {
 	return t.columns
 }
 
 // Measurement returns measurement column or nil
-func (t *Table) Measurement() *TableColumn {
+func (t *CsvTable) Measurement() *CsvTableColumn {
 	t.computeIndexes()
 	return t.cachedMeasurement
 }
 
 // Time returns time column or nil
-func (t *Table) Time() *TableColumn {
+func (t *CsvTable) Time() *CsvTableColumn {
 	t.computeIndexes()
 	return t.cachedTime
 }
 
 // FieldName returns field name column or nil
-func (t *Table) FieldName() *TableColumn {
+func (t *CsvTable) FieldName() *CsvTableColumn {
 	t.computeIndexes()
 	return t.cachedFieldName
 }
 
 // FieldValue returns field value column or nil
-func (t *Table) FieldValue() *TableColumn {
+func (t *CsvTable) FieldValue() *CsvTableColumn {
 	t.computeIndexes()
 	return t.cachedFieldValue
 }
 
 // Tags returns tags
-func (t *Table) Tags() []TableColumn {
+func (t *CsvTable) Tags() []CsvTableColumn {
 	t.computeIndexes()
 	return t.cachedTags
 }
 
 // Fields returns fields
-func (t *Table) Fields() []TableColumn {
+func (t *CsvTable) Fields() []CsvTableColumn {
 	t.computeIndexes()
 	return t.cachedFields
 }

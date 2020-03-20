@@ -39,7 +39,7 @@ func init() {
 }
 
 func processLines(reader *csv.Reader) {
-	var table = Table{}
+	var table = CsvTable{}
 	for {
 		// Read each record from csv
 		row, err := reader.Read()
