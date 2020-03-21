@@ -169,6 +169,7 @@ func Test_IsTypeSupported(t *testing.T) {
 	require.Equal(t, IsTypeSupported(base64BinaryDataType), true)
 	require.Equal(t, IsTypeSupported(timeDatatypeRFC), true)
 	require.Equal(t, IsTypeSupported(timeDatatypeRFCNano), true)
+	require.Equal(t, IsTypeSupported(timestamp), true)
 	require.Equal(t, IsTypeSupported(""), true)
 	require.Equal(t, IsTypeSupported(" "), false)
 }

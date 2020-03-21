@@ -27,7 +27,7 @@ const (
 var supportedDataTypes map[string]struct{}
 
 func init() {
-	supportedDataTypes = make(map[string]struct{}, 10)
+	supportedDataTypes = make(map[string]struct{}, 11)
 	supportedDataTypes[stringDatatype] = struct{}{}
 	supportedDataTypes[doubleDatatype] = struct{}{}
 	supportedDataTypes[boolDatatype] = struct{}{}
@@ -37,6 +37,7 @@ func init() {
 	supportedDataTypes[base64BinaryDataType] = struct{}{}
 	supportedDataTypes[timeDatatypeRFC] = struct{}{}
 	supportedDataTypes[timeDatatypeRFCNano] = struct{}{}
+	supportedDataTypes[timestamp] = struct{}{}
 	supportedDataTypes[""] = struct{}{}
 }
 
