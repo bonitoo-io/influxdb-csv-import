@@ -24,7 +24,7 @@ const (
 	linePartTime
 )
 
-type headerDescriptor struct {
+type annotationComment struct {
 	label string
 	flag  uint8
 	setup func(column *CsvTableColumn, value string) error
@@ -41,7 +41,7 @@ func ignoreLeadingComment(value string) string {
 	return value
 }
 
-var headerTypes = []headerDescriptor{
+var annotationComments = []annotationComment{
 	{"#group", 1, func(column *CsvTableColumn, value string) error {
 		if strings.HasSuffix(value, "true") {
 			column.LinePart = linePartTag
@@ -135,7 +135,7 @@ type CsvTable struct {
 
 // AddRow adds header, comment or data row
 func (t *CsvTable) AddRow(row []string) bool {
-	// support just header with #
+	// detect data row or table header row
 	if len(row[0]) == 0 || row[0][0] != '#' {
 		if !t.readTableData {
 			if t.partBits == 0 {
@@ -156,40 +156,41 @@ func (t *CsvTable) AddRow(row []string) bool {
 		}
 		return true
 	}
-	for i := 0; i < len(headerTypes); i++ {
-		supportedHeader := &headerTypes[i]
-		if strings.HasPrefix(strings.ToLower(row[0]), supportedHeader.label) {
-			if len(row[0]) > len(supportedHeader.label) && row[0][len(supportedHeader.label)] != ' ' {
-				continue // not a comment from the supported header
+	// process supported anotation comments
+	for i := 0; i < len(annotationComments); i++ {
+		supportedAnnotation := &annotationComments[i]
+		if strings.HasPrefix(strings.ToLower(row[0]), supportedAnnotation.label) {
+			if len(row[0]) > len(supportedAnnotation.label) && row[0][len(supportedAnnotation.label)] != ' ' {
+				continue // not a comment from the supported annotation
 			}
 			t.indexed = false
 			t.readTableData = false
-			// create new columns when data change (overriding headers or no headers)
-			if t.partBits == 0 || t.partBits&supportedHeader.flag == 1 {
-				t.partBits = supportedHeader.flag
+			// create new columns when data change
+			if t.partBits == 0 || t.partBits&supportedAnnotation.flag == 1 {
+				t.partBits = supportedAnnotation.flag
 				t.columns = make([]CsvTableColumn, len(row))
 				for i := 0; i < len(row); i++ {
 					t.columns[i].Index = i
 				}
 			} else {
-				t.partBits = t.partBits | supportedHeader.flag
+				t.partBits = t.partBits | supportedAnnotation.flag
 			}
 			for j := 0; j < len(t.columns); j++ {
 				col := &t.columns[j]
 				if col.Index >= len(row) {
 					continue // missing value
 				} else {
-					err := supportedHeader.setup(col, row[col.Index])
+					err := supportedAnnotation.setup(col, row[col.Index])
 					if err != nil {
 						log.Println("WARNING:", err)
 					}
 				}
 			}
-
 			return false
 		}
 	}
-	return row[0][0] != '#'
+	// comment row
+	return false
 }
 
 func (t *CsvTable) computeIndexes() bool {
