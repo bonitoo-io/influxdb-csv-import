@@ -205,9 +205,14 @@ func TestCsvData(t *testing.T) {
 			"cpu a=1578651010000000000,b=2",
 		},
 		{
-			"annotated7",
+			"annotated8",
 			"#linepart measurement,,,field\nmeasurement,_field,_value,other\ncpu,a,1,2",
 			"cpu a=1,other=2",
+		},
+		{
+			"annotated9_sortedTags",
+			"#linepart measurement,tag,tag,time,field\nmeasurement,b,a,c,time\ncpu,1,2,3,4",
+			"cpu,a=2,b=1 time=4 3",
 		},
 		{
 			"allTypes1",

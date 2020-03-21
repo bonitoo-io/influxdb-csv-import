@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 )
 
@@ -209,6 +210,11 @@ func (t *CsvTable) recomputeIndexes() {
 				t.cachedFields = append(t.cachedFields, col)
 			}
 		}
+	}
+	if t.cachedTags != nil && len(t.cachedTags) > 0 {
+		sort.Slice(t.cachedTags, func(i, j int) bool {
+			return t.cachedTags[i].Label < t.cachedTags[j].Label
+		})
 	}
 
 	t.indexed = true
