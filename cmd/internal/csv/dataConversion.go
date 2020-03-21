@@ -21,6 +21,7 @@ const (
 	base64BinaryDataType = "base64Binary"
 	timeDatatypeRFC      = "dateTime:RFC3339"
 	timeDatatypeRFCNano  = "dateTime:RFC3339Nano"
+	timestamp            = "timestamp" //the same as long, but not serialized with i suffix
 )
 
 var supportedDataTypes map[string]struct{}
@@ -66,12 +67,15 @@ func escapeTag(val string) string {
 	return val
 }
 func quoteValue(val string) string {
+	return "\"" + escapeString(val) + "\""
+}
+func escapeString(val string) string {
 	for i := 0; i < len(val); i++ {
 		if val[i] == '"' || val[i] == '\\' {
-			return "\"" + replaceQuoted.Replace(val) + "\""
+			return replaceQuoted.Replace(val)
 		}
 	}
-	return "\"" + val + "\""
+	return val
 }
 
 func toTypedValue(val string, dataType string) (interface{}, error) {
@@ -82,6 +86,12 @@ func toTypedValue(val string, dataType string) (interface{}, error) {
 		return time.Parse(time.RFC3339, val)
 	case timeDatatypeRFCNano:
 		return time.Parse(time.RFC3339Nano, val)
+	case timestamp:
+		t, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		return time.Unix(0, t), nil
 	case durationDatatype:
 		return time.ParseDuration(val)
 	case doubleDatatype:

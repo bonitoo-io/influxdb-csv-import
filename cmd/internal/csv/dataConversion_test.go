@@ -143,6 +143,7 @@ func Test_convert(t *testing.T) {
 	}{
 		{"", "1", "1"},
 		{"long", "a", ""},
+		{"timestamp", "a", ""},
 		{"string", "a", `"a"`},
 	}
 
