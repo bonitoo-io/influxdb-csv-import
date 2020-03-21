@@ -47,13 +47,12 @@ func (state *lineReader) Read(p []byte) (n int, err error) {
 		}
 		state.csv.FieldsPerRecord = 0 // because every row can have different count of columns
 		if state.table.AddRow(row) {
-			line, err := state.table.CreateLine(row)
+			buffer, err := state.table.AppendLine(state.buffer, row)
 			if err != nil {
 				state.finished = fmt.Errorf("Line #%d: %v", state.lineNumber, err)
 				return state.Read(p)
 			}
-			state.buffer = append(state.buffer, line...)
-			state.buffer = append(state.buffer, "\n"...)
+			state.buffer = append(buffer, '\n')
 			break
 		}
 	}

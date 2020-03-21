@@ -5,6 +5,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"unsafe"
 )
 
 const (
@@ -222,52 +223,51 @@ func (t *CsvTable) recomputeIndexes() {
 
 // CreateLine produces a protocol line of the supplied row or returned error
 func (t *CsvTable) CreateLine(row []string) (line string, err error) {
-	builder := strings.Builder{}
-	builder.Grow(100)
-	err = t.AppendLine(&builder, row)
+	buffer := make([]byte, 100)[:0]
+	buffer, err = t.AppendLine(buffer, row)
 	if err != nil {
 		return "", err
 	}
-	return builder.String(), nil
+	return *(*string)(unsafe.Pointer(&buffer)), nil
 }
 
-// AppendLine appends a protocol to the supplied builder or returns non-nil error
-func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
+// AppendLine appends a protocol line to supplied buffer, returns appended buffer and error indication
+func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 	if t.computeIndexes() {
 		// validate column data types
 		if t.cachedFieldValue != nil && !IsTypeSupported(t.cachedFieldValue.DataType) {
-			return fmt.Errorf("column '%s': data type '%s' is not supported", t.cachedFieldValue.Label, t.cachedFieldValue.DataType)
+			return buffer, fmt.Errorf("column '%s': data type '%s' is not supported", t.cachedFieldValue.Label, t.cachedFieldValue.DataType)
 		}
 		for _, c := range t.cachedFields {
 			if !IsTypeSupported(c.DataType) {
-				return fmt.Errorf("column '%s': data type '%s' is not supported", c.Label, c.DataType)
+				return buffer, fmt.Errorf("column '%s': data type '%s' is not supported", c.Label, c.DataType)
 			}
 		}
 	}
 
 	if t.cachedMeasurement == nil {
-		return fmt.Errorf("no measurement column found (columns: %d)", len(t.columns))
+		return buffer, fmt.Errorf("no measurement column found (columns: %d)", len(t.columns))
 	}
-	builder.WriteString(escapeMeasurement(row[t.cachedMeasurement.Index]))
+	buffer = append(buffer, escapeMeasurement(row[t.cachedMeasurement.Index])...)
 	for _, tag := range t.cachedTags {
 		if tag.Index < len(row) && len(row[tag.Index]) > 0 {
-			builder.WriteString(",")
-			builder.WriteString(escapeTag(tag.Label))
-			builder.WriteString("=")
-			builder.WriteString(escapeTag(row[tag.Index]))
+			buffer = append(buffer, ',')
+			buffer = append(buffer, escapeTag(tag.Label)...)
+			buffer = append(buffer, '=')
+			buffer = append(buffer, escapeTag(row[tag.Index])...)
 		}
 	}
-	builder.WriteString(" ")
+	buffer = append(buffer, ' ')
 	fieldAdded := false
 	if t.cachedFieldName != nil && t.cachedFieldValue != nil {
 		converted, err := convert(row[t.cachedFieldValue.Index], t.cachedFieldValue.DataType)
 		if err != nil {
-			return err
+			return buffer, err
 		}
 		if len(converted) > 0 {
-			builder.WriteString(escapeTag(row[t.cachedFieldName.Index]))
-			builder.WriteString("=")
-			builder.WriteString(converted)
+			buffer = append(buffer, escapeTag(row[t.cachedFieldName.Index])...)
+			buffer = append(buffer, '=')
+			buffer = append(buffer, converted...)
 			fieldAdded = true
 		}
 	}
@@ -275,22 +275,22 @@ func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
 		if field.Index < len(row) {
 			converted, err := convert(row[field.Index], field.DataType)
 			if err != nil {
-				return err
+				return buffer, err
 			}
 			if len(converted) > 0 {
 				if !fieldAdded {
 					fieldAdded = true
 				} else {
-					builder.WriteString(",")
+					buffer = append(buffer, ',')
 				}
-				builder.WriteString(escapeTag(field.Label))
-				builder.WriteString("=")
-				builder.WriteString(converted)
+				buffer = append(buffer, escapeTag(field.Label)...)
+				buffer = append(buffer, '=')
+				buffer = append(buffer, converted...)
 			}
 		}
 	}
 	if !fieldAdded {
-		return fmt.Errorf("no field column found (columns: %d)", len(t.columns))
+		return buffer, fmt.Errorf("no field column found (columns: %d)", len(t.columns))
 	}
 
 	if t.cachedTime != nil && t.cachedTime.Index < len(row) {
@@ -302,18 +302,20 @@ func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
 				dataType = "dateTime:RFC3339Nano"
 			} else if strings.Index(timeVal, "-") >= 0 {
 				dataType = "dateTime:RFC3339"
+			} else {
+				dataType = "timestamp"
 			}
 		}
 		timeVal, err := convert(timeVal, dataType)
 		if err != nil {
-			return err
+			return buffer, err
 		}
 		if timeVal != "" {
-			builder.WriteString(" ")
-			builder.WriteString(timeVal)
+			buffer = append(buffer, ' ')
+			buffer = append(buffer, timeVal...)
 		}
 	}
-	return nil
+	return buffer, nil
 }
 
 // Column returns the first column of the supplied label or nil
