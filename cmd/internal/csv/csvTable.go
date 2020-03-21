@@ -101,7 +101,7 @@ type CsvTable struct {
 	// indicated whether a table layout has changed
 	indexed bool
 
-	/* cached data */
+	/* cached columns are initialized before reading the data rows */
 
 	cachedMeasurement *CsvTableColumn
 	cachedTime        *CsvTableColumn
