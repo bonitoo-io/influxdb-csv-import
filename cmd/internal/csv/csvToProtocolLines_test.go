@@ -26,7 +26,13 @@ func Test_CsvToProtocolLines_success(t *testing.T) {
 			"simple1",
 			"_measurement,a,b\ncpu,1,1\ncpu,\n",
 			"",
-			"no field column",
+			"no field data",
+		},
+		{
+			"simple1",
+			"_measurement,a,_time\ncpu,1,1\ncpu,2,x\n",
+			"",
+			"invalid syntax", // x is not valid for time column
 		},
 	}
 	bufferSizes := []int{40, 7, 3, 1}
@@ -44,7 +50,9 @@ func Test_CsvToProtocolLines_success(t *testing.T) {
 							break
 						}
 						if test.err != "" {
-							require.True(t, strings.Contains(err.Error(), test.err))
+							if err := err.Error(); !strings.Contains(err, test.err) {
+								require.Equal(t, err, test.err)
+							}
 							return
 						}
 						require.Nil(t, err.Error())

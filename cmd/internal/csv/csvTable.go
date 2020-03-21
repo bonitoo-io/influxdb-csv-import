@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -99,6 +100,16 @@ func (c *CsvTableColumn) LineLabel() string {
 		return c.escapedLabel
 	}
 	return c.Label
+}
+
+// CsvColumnError indicates conversion in a specific column
+type CsvColumnError struct {
+	Column string
+	Err    error
+}
+
+func (e CsvColumnError) Error() string {
+	return fmt.Sprintf("column '%s': %v", e.Column, e.Err)
 }
 
 // CsvTable gathers metadata about columns
@@ -249,17 +260,23 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 	if t.computeIndexes() {
 		// validate column data types
 		if t.cachedFieldValue != nil && !IsTypeSupported(t.cachedFieldValue.DataType) {
-			return buffer, fmt.Errorf("column '%s': data type '%s' is not supported", t.cachedFieldValue.Label, t.cachedFieldValue.DataType)
+			return buffer, CsvColumnError{
+				t.cachedFieldValue.Label,
+				fmt.Errorf("data type '%s' is not supported", t.cachedFieldValue.DataType),
+			}
 		}
 		for _, c := range t.cachedFields {
 			if !IsTypeSupported(c.DataType) {
-				return buffer, fmt.Errorf("column '%s': data type '%s' is not supported", c.Label, c.DataType)
+				return buffer, CsvColumnError{
+					c.Label,
+					fmt.Errorf("data type '%s' is not supported", c.DataType),
+				}
 			}
 		}
 	}
 
 	if t.cachedMeasurement == nil {
-		return buffer, fmt.Errorf("no measurement column found (columns: %d)", len(t.columns))
+		return buffer, errors.New("no measurement column found")
 	}
 	buffer = append(buffer, escapeMeasurement(row[t.cachedMeasurement.Index])...)
 	for _, tag := range t.cachedTags {
@@ -281,7 +298,10 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 			var err error
 			buffer, err = appendConverted(buffer, value, t.cachedFieldValue.DataType)
 			if err != nil {
-				return buffer, err
+				return buffer, CsvColumnError{
+					t.cachedFieldName.Label,
+					err,
+				}
 			}
 			fieldAdded = true
 		}
@@ -300,13 +320,16 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 				var err error
 				buffer, err = appendConverted(buffer, value, field.DataType)
 				if err != nil {
-					return buffer, err
+					return buffer, CsvColumnError{
+						field.Label,
+						err,
+					}
 				}
 			}
 		}
 	}
 	if !fieldAdded {
-		return buffer, fmt.Errorf("no field column found (columns: %d)", len(t.columns))
+		return buffer, errors.New("no field data found")
 	}
 
 	if t.cachedTime != nil && t.cachedTime.Index < len(row) {
@@ -327,7 +350,10 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 			var err error
 			buffer, err = appendConverted(buffer, timeVal, dataType)
 			if err != nil {
-				return buffer, err
+				return buffer, CsvColumnError{
+					t.cachedTime.Label,
+					err,
+				}
 			}
 		}
 	}

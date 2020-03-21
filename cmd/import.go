@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"unsafe"
 
 	internalCsv "bonitoo-io/influxdb-csv-import/cmd/internal/csv"
 
@@ -43,6 +44,7 @@ func init() {
 func processLines(reader *csv.Reader) {
 	var table = internalCsv.CsvTable{}
 	lineNumber := 0
+	buffer := make([]byte, 0, 100)
 	for {
 		// Read each record from csv
 		row, err := reader.Read()
@@ -55,11 +57,12 @@ func processLines(reader *csv.Reader) {
 			log.Fatal(err)
 		}
 		if table.AddRow(row) {
-			line, err := table.CreateLine(row)
+			buffer = buffer[:0]
+			buffer, err = table.AppendLine(buffer, row)
 			if err != nil {
 				log.Printf("ERROR in line #%d: %v\n", lineNumber, err)
 			} else {
-				fmt.Println(line)
+				fmt.Println(*(*string)(unsafe.Pointer(&buffer)))
 			}
 		}
 	}

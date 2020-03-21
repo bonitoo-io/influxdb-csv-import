@@ -6,6 +6,22 @@ import (
 	"io"
 )
 
+// CsvLineError is returned for csv conversion errors
+// Line numbers are 1-indexed
+type CsvLineError struct {
+	Line int
+	Err  error
+}
+
+func (e CsvLineError) Error() string {
+	switch err := e.Err.(type) {
+	case CsvColumnError:
+		return fmt.Sprintf("line %d, column '%s': %v", e.Line, err.Column, err)
+	default:
+		return fmt.Sprintf("line %d: %v", e.Line, e.Err)
+	}
+}
+
 type lineReader struct {
 	// csv reading
 	csv        *csv.Reader
@@ -19,9 +35,11 @@ type lineReader struct {
 }
 
 func (state *lineReader) Read(p []byte) (n int, err error) {
+	// state1: finished
 	if state.finished != nil {
 		return 0, state.finished
 	}
+	// state2: some data are in the buffer to copy
 	if len(state.buffer) > state.index {
 		// we have remaining bytes to copy
 		if len(state.buffer)-state.index > len(p) {
@@ -37,6 +55,7 @@ func (state *lineReader) Read(p []byte) (n int, err error) {
 		state.index = 0
 		return n, nil
 	}
+	// state3: fill buffer with data to read from
 	for {
 		// Read each record from csv
 		state.lineNumber++
@@ -49,7 +68,7 @@ func (state *lineReader) Read(p []byte) (n int, err error) {
 		if state.table.AddRow(row) {
 			buffer, err := state.table.AppendLine(state.buffer, row)
 			if err != nil {
-				state.finished = fmt.Errorf("Line #%d: %v", state.lineNumber, err)
+				state.finished = CsvLineError{state.lineNumber, err}
 				return state.Read(p)
 			}
 			state.buffer = append(buffer, '\n')
