@@ -305,6 +305,10 @@ func TestCsvData_dataErrors(t *testing.T) {
 			require.Equal(t, 1, len(errors))
 			// fmt.Println(errors[0])
 			require.NotNil(t, errors[0].Error())
+			// LineLabel is the same as Label in all test columns
+			for _, col := range table.Columns() {
+				require.Equal(t, col.Label, col.LineLabel())
+			}
 		})
 	}
 }

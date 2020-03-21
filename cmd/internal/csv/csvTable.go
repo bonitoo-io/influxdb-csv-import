@@ -89,6 +89,16 @@ type CsvTableColumn struct {
 	DefaultValue string
 	// index of this column in the table row
 	Index int
+
+	escapedLabel string
+}
+
+// LineLabel returns escaped column name so that it can be used as tag name or field name in line protocol
+func (c *CsvTableColumn) LineLabel() string {
+	if len(c.escapedLabel) > 0 {
+		return c.escapedLabel
+	}
+	return c.Label
 }
 
 // CsvTable gathers metadata about columns
@@ -203,11 +213,14 @@ func (t *CsvTable) recomputeIndexes() {
 		case col.Label[0] == '_':
 			break
 		case col.LinePart == linePartTag:
+			col.escapedLabel = escapeTag(col.Label)
 			t.cachedTags = append(t.cachedTags, col)
 		case col.LinePart == linePartField:
+			col.escapedLabel = escapeTag(col.Label)
 			t.cachedFields = append(t.cachedFields, col)
 		default:
 			if defaultIsField {
+				col.escapedLabel = escapeTag(col.Label)
 				t.cachedFields = append(t.cachedFields, col)
 			}
 		}
@@ -252,7 +265,7 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 	for _, tag := range t.cachedTags {
 		if tag.Index < len(row) && len(row[tag.Index]) > 0 {
 			buffer = append(buffer, ',')
-			buffer = append(buffer, escapeTag(tag.Label)...)
+			buffer = append(buffer, tag.LineLabel()...)
 			buffer = append(buffer, '=')
 			buffer = append(buffer, escapeTag(row[tag.Index])...)
 		}
@@ -283,7 +296,7 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 				} else {
 					buffer = append(buffer, ',')
 				}
-				buffer = append(buffer, escapeTag(field.Label)...)
+				buffer = append(buffer, field.LineLabel()...)
 				buffer = append(buffer, '=')
 				buffer = append(buffer, converted...)
 			}
