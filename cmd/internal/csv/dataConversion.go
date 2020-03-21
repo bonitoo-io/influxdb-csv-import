@@ -114,56 +114,61 @@ func toTypedValue(val string, dataType string) (interface{}, error) {
 	}
 }
 
-func toLineProtocolValue(value interface{}) (string, error) {
+func appendProtocolValue(buffer []byte, value interface{}) ([]byte, error) {
 	switch v := value.(type) {
 	case uint64:
-		return strconv.FormatUint(v, 10) + "u", nil
+		return append(strconv.AppendUint(buffer, v, 10), 'u'), nil
 	case int64:
-		return strconv.FormatInt(v, 10) + "i", nil
+		return append(strconv.AppendInt(buffer, v, 10), 'i'), nil
 	case int:
-		return strconv.FormatInt(int64(v), 10) + "i", nil
+		return append(strconv.AppendInt(buffer, int64(v), 10), 'i'), nil
 	case float64:
 		if math.IsNaN(v) {
-			return "", errors.New("value is NaN")
+			return buffer, errors.New("value is NaN")
 		}
 		if math.IsInf(v, 0) {
-			return "", errors.New("value is Infinite")
+			return buffer, errors.New("value is Infinite")
 		}
-		return strconv.FormatFloat(v, 'f', -1, 64), nil
+		return strconv.AppendFloat(buffer, v, 'f', -1, 64), nil
 	case float32:
 		v32 := float64(v)
 		if math.IsNaN(v32) {
-			return "", errors.New("value is NaN")
+			return buffer, errors.New("value is NaN")
 		}
 		if math.IsInf(v32, 0) {
-			return "", errors.New("value is Infinite")
+			return buffer, errors.New("value is Infinite")
 		}
-		return strconv.FormatFloat(v32, 'f', -1, 64), nil
+		return strconv.AppendFloat(buffer, v32, 'f', -1, 64), nil
 	case string:
-		return quoteValue(v), nil
+		buffer = append(buffer, '"')
+		buffer = append(buffer, escapeString(v)...)
+		buffer = append(buffer, '"')
+		return buffer, nil
 	case []byte:
-		return base64.StdEncoding.EncodeToString(v), nil
+		buf := make([]byte, base64.StdEncoding.EncodedLen(len(v)))
+		base64.StdEncoding.Encode(buf, v)
+		return append(buffer, buf...), nil
 	case bool:
 		if v {
-			return "true", nil
+			return append(buffer, "true"...), nil
 		}
-		return "false", nil
+		return append(buffer, "false"...), nil
 	case time.Time:
-		return strconv.FormatInt(v.UnixNano(), 10), nil
+		return strconv.AppendInt(buffer, v.UnixNano(), 10), nil
 	case time.Duration:
-		return strconv.FormatInt(v.Nanoseconds(), 10) + "i", nil
+		return append(strconv.AppendInt(buffer, v.Nanoseconds(), 10), 'i'), nil
 	default:
-		return "", fmt.Errorf("unsupported value type: %T", v)
+		return buffer, fmt.Errorf("unsupported value type: %T", v)
 	}
 }
 
-func convert(val string, dataType string) (string, error) {
+func appendConverted(buffer []byte, val string, dataType string) ([]byte, error) {
 	if len(dataType) == 0 { // keep the value as it is
-		return val, nil
+		return append(buffer, val...), nil
 	}
 	typedVal, err := toTypedValue(val, dataType)
 	if err != nil {
-		return "", err
+		return buffer, err
 	}
-	return toLineProtocolValue(typedVal)
+	return appendProtocolValue(buffer, typedVal)
 }

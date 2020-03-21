@@ -125,17 +125,17 @@ func Test_toLineProtocolValue(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			val, err := toLineProtocolValue(test.value)
+			val, err := appendProtocolValue(nil, test.value)
 			if err != nil && test.expect != "" {
 				require.Nil(t, err.Error())
 			}
-			require.Equal(t, test.expect, val)
+			require.Equal(t, test.expect, string(val))
 		})
 	}
 }
 
 // Test_convert
-func Test_convert(t *testing.T) {
+func Test_appendConverted(t *testing.T) {
 	var tests = []struct {
 		dataType string
 		value    string
@@ -149,11 +149,11 @@ func Test_convert(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			val, err := convert(test.value, test.dataType)
+			val, err := appendConverted(nil, test.value, test.dataType)
 			if err != nil && test.expect != "" {
 				require.Nil(t, err.Error())
 			}
-			require.Equal(t, test.expect, val)
+			require.Equal(t, test.expect, string(val))
 		})
 	}
 }

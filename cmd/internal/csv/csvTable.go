@@ -244,7 +244,7 @@ func (t *CsvTable) CreateLine(row []string) (line string, err error) {
 	return *(*string)(unsafe.Pointer(&buffer)), nil
 }
 
-// AppendLine appends a protocol line to supplied buffer, returns appended buffer and error indication
+// AppendLine appends a protocol line to the supplied buffer and returns appended buffer and error indication
 func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 	if t.computeIndexes() {
 		// validate column data types
@@ -273,24 +273,23 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 	buffer = append(buffer, ' ')
 	fieldAdded := false
 	if t.cachedFieldName != nil && t.cachedFieldValue != nil {
-		converted, err := convert(row[t.cachedFieldValue.Index], t.cachedFieldValue.DataType)
-		if err != nil {
-			return buffer, err
-		}
-		if len(converted) > 0 {
-			buffer = append(buffer, escapeTag(row[t.cachedFieldName.Index])...)
+		field := row[t.cachedFieldName.Index]
+		value := row[t.cachedFieldValue.Index]
+		if len(value) > 0 && len(field) > 0 {
+			buffer = append(buffer, escapeTag(field)...)
 			buffer = append(buffer, '=')
-			buffer = append(buffer, converted...)
+			var err error
+			buffer, err = appendConverted(buffer, value, t.cachedFieldValue.DataType)
+			if err != nil {
+				return buffer, err
+			}
 			fieldAdded = true
 		}
 	}
 	for _, field := range t.cachedFields {
 		if field.Index < len(row) {
-			converted, err := convert(row[field.Index], field.DataType)
-			if err != nil {
-				return buffer, err
-			}
-			if len(converted) > 0 {
+			value := row[field.Index]
+			if len(value) > 0 {
 				if !fieldAdded {
 					fieldAdded = true
 				} else {
@@ -298,7 +297,11 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 				}
 				buffer = append(buffer, field.LineLabel()...)
 				buffer = append(buffer, '=')
-				buffer = append(buffer, converted...)
+				var err error
+				buffer, err = appendConverted(buffer, value, field.DataType)
+				if err != nil {
+					return buffer, err
+				}
 			}
 		}
 	}
@@ -308,24 +311,24 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 
 	if t.cachedTime != nil && t.cachedTime.Index < len(row) {
 		timeVal := row[t.cachedTime.Index]
-		var dataType = t.cachedTime.DataType
-		if timeVal != "" && dataType == "" {
-			//try to detect data type
-			if strings.Index(timeVal, ".") >= 0 {
-				dataType = "dateTime:RFC3339Nano"
-			} else if strings.Index(timeVal, "-") >= 0 {
-				dataType = "dateTime:RFC3339"
-			} else {
-				dataType = "timestamp"
+		if len(timeVal) > 0 {
+			var dataType = t.cachedTime.DataType
+			if len(dataType) == 0 {
+				//try to detect data type
+				if strings.Index(timeVal, ".") >= 0 {
+					dataType = "dateTime:RFC3339Nano"
+				} else if strings.Index(timeVal, "-") >= 0 {
+					dataType = "dateTime:RFC3339"
+				} else {
+					dataType = "timestamp"
+				}
 			}
-		}
-		timeVal, err := convert(timeVal, dataType)
-		if err != nil {
-			return buffer, err
-		}
-		if timeVal != "" {
 			buffer = append(buffer, ' ')
-			buffer = append(buffer, timeVal...)
+			var err error
+			buffer, err = appendConverted(buffer, timeVal, dataType)
+			if err != nil {
+				return buffer, err
+			}
 		}
 	}
 	return buffer, nil
