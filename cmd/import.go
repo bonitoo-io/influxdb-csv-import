@@ -25,8 +25,8 @@ var importCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			reader = csv.NewReader(file)
 			defer file.Close()
+			reader = csv.NewReader(file)
 		} else {
 			reader = csv.NewReader(os.Stdin)
 		}

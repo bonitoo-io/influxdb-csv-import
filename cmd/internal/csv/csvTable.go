@@ -250,7 +250,7 @@ func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
 	}
 	builder.WriteString(escapeMeasurement(row[t.cachedMeasurement.Index]))
 	for _, tag := range t.cachedTags {
-		if len(row[tag.Index]) > 0 {
+		if tag.Index < len(row) && len(row[tag.Index]) > 0 {
 			builder.WriteString(",")
 			builder.WriteString(escapeTag(tag.Label))
 			builder.WriteString("=")
@@ -272,26 +272,28 @@ func (t *CsvTable) AppendLine(builder *strings.Builder, row []string) error {
 		}
 	}
 	for _, field := range t.cachedFields {
-		converted, err := convert(row[field.Index], field.DataType)
-		if err != nil {
-			return err
-		}
-		if len(converted) > 0 {
-			if !fieldAdded {
-				fieldAdded = true
-			} else {
-				builder.WriteString(",")
+		if field.Index < len(row) {
+			converted, err := convert(row[field.Index], field.DataType)
+			if err != nil {
+				return err
 			}
-			builder.WriteString(escapeTag(field.Label))
-			builder.WriteString("=")
-			builder.WriteString(converted)
+			if len(converted) > 0 {
+				if !fieldAdded {
+					fieldAdded = true
+				} else {
+					builder.WriteString(",")
+				}
+				builder.WriteString(escapeTag(field.Label))
+				builder.WriteString("=")
+				builder.WriteString(converted)
+			}
 		}
 	}
 	if !fieldAdded {
 		return fmt.Errorf("no field column found (columns: %d)", len(t.columns))
 	}
 
-	if t.cachedTime != nil {
+	if t.cachedTime != nil && t.cachedTime.Index < len(row) {
 		timeVal := row[t.cachedTime.Index]
 		var dataType = t.cachedTime.DataType
 		if timeVal != "" && dataType == "" {
