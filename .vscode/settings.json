@@ -1,3 +1,5 @@
 {
-  "go.buildOnSave": "workspace"
+  "go.buildOnSave": "workspace",
+  "terminal.integrated.fontFamily": "Monospace",
+  "terminal.integrated.fontSize": 13
 }

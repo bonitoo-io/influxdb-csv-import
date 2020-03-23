@@ -14,7 +14,7 @@
       "args": [
         "import",
         "-f",
-        "/home/zavora/Desktop/influx/2020-02-25-14-22_chronograf_data.csv/2020-02-25-14-22_chronograf_data.csv"
+        "doc/examples/annotatedLineType.csv"
       ]
     },
     {
