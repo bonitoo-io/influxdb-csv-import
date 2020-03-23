@@ -4,12 +4,11 @@ GOROOT=~/sdk/go1.13.9
 PATH=$GOROOT/bin:$PATH
 go vet
 # tests
-go test ./...
+go test ./... -coverprofile cover.out
 go tool cover -html=cover.out -o=cover.html
 #xdg-open ./cover.html
 
 # editor checker
-GO111MODULE=on go run github.com/editorconfig-checker/editorconfig-checker/cmd/editorconfig-checker
 GO111MODULE=on go run github.com/editorconfig-checker/editorconfig-checker/cmd/editorconfig-checker
 # static analysis
 GO111MODULE=on go install honnef.co/go/tools/cmd/staticcheck

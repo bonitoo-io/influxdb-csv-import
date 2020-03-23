@@ -47,8 +47,8 @@ func Test_escapeTag(t *testing.T) {
 	}
 }
 
-// Test_escapeValue
-func Test_escapeValue(t *testing.T) {
+// Test_escapeString
+func Test_escapeString(t *testing.T) {
 	var tests = []struct {
 		value  string
 		expect string
@@ -84,6 +84,10 @@ func Test_toTypedValue(t *testing.T) {
 		{"base64Binary", "YWFh", []byte("aaa")},
 		{"dateTime:RFC3339", "1970-01-01T00:00:00Z", epochTime},
 		{"dateTime:RFC3339Nano", "1970-01-01T00:00:00.0Z", epochTime},
+		{"dateTime:RFC3339", "1970-01-01T00:00:00.000000001Z", epochTime.Add(time.Duration(1))},
+		{"dateTime:RFC3339Nano", "1970-01-01T00:00:00.000000002Z", epochTime.Add(time.Duration(2))},
+		{"dateTime", "1970-01-01T00:00:00Z", epochTime},
+		{"dateTime", "1970-01-01T00:00:00.000000001Z", epochTime.Add(time.Duration(1))},
 		{"u.type", "", nil},
 	}
 
@@ -167,9 +171,10 @@ func Test_IsTypeSupported(t *testing.T) {
 	require.Equal(t, IsTypeSupported(uLongDatatype), true)
 	require.Equal(t, IsTypeSupported(durationDatatype), true)
 	require.Equal(t, IsTypeSupported(base64BinaryDataType), true)
-	require.Equal(t, IsTypeSupported(timeDatatypeRFC), true)
-	require.Equal(t, IsTypeSupported(timeDatatypeRFCNano), true)
-	require.Equal(t, IsTypeSupported(timestamp), true)
+	require.Equal(t, IsTypeSupported(dateTimeDatatype), true)
+	require.Equal(t, IsTypeSupported(dateTimeDatatypeRFC3339), true)
+	require.Equal(t, IsTypeSupported(dateTimeDatatypeRFC3339Nano), true)
+	require.Equal(t, IsTypeSupported(timestampDatatype), true)
 	require.Equal(t, IsTypeSupported(""), true)
 	require.Equal(t, IsTypeSupported(" "), false)
 }
