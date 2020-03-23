@@ -19,7 +19,7 @@ See https://github.com/influxdata/influxdb/issues/17003
    * time column can be specified as an int64 number or in RFC3339 format
 
 ## Example 0 - DRY RUN
-To emmit line protocol, set env variable _INFLUX_HOST_ to _-_ .
+To emmit line protocol to standard output, set env variable _INFLUX_HOST_ to _-_ .
 
 ```
 export INFLUX_HOST=-
