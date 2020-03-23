@@ -1,4 +1,4 @@
-package cmd
+package write
 
 import (
 	"io"
@@ -16,6 +16,12 @@ func Test_CsvToProtocolLines_success(t *testing.T) {
 		lines string
 		err   string
 	}{
+		{
+			"simple1_withSep",
+			"sep=;\n_measurement;a;b\ncpu;1;1\ncpu;b2\n",
+			"cpu a=1,b=1\ncpu a=b2\n",
+			"",
+		},
 		{
 			"simple1",
 			"_measurement,a,b\ncpu,1,1\ncpu,b2\n",

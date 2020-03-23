@@ -1,9 +1,10 @@
-package cmd
+package write
 
 import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // CsvLineError is returned for csv conversion errors
@@ -65,6 +66,11 @@ func (state *lineReader) Read(p []byte) (n int, err error) {
 			return state.Read(p)
 		}
 		state.csv.FieldsPerRecord = 0 // because every row can have different count of columns
+		if state.lineNumber == 1 && len(row) == 1 && strings.HasPrefix(row[0], "sep=") && len(row[0]) > 4 {
+			// supports separator specification on first line
+			state.csv.Comma = rune(row[0][4])
+			continue
+		}
 		if state.table.AddRow(row) {
 			buffer, err := state.table.AppendLine(state.buffer, row)
 			if err != nil {
