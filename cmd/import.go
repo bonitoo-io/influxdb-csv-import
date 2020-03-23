@@ -8,7 +8,7 @@ import (
 	"os"
 	"unsafe"
 
-	internalCsv "bonitoo-io/influxdb-csv-import/cmd/internal/csv"
+	internalCsv "bonitoo-io/influxdb-csv-import/write"
 
 	"github.com/spf13/cobra"
 )
