@@ -1,4 +1,4 @@
-module bonitoo-io/influxdb-csv-import
+module github.com/bonitoo-io/influxdb-csv-import
 
 go 1.14
 

@@ -22,7 +22,7 @@ THE SOFTWARE.
 package main
 
 import (
-	"bonitoo-io/influxdb-csv-import/cmd"
+	"github.com/bonitoo-io/influxdb-csv-import/cmd"
 )
 
 func main() {
