@@ -6,14 +6,14 @@ https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format 
 ## CSV Annotations
 
 * https://v2.docs.influxdata.com/v2.0/reference/syntax/annotated-csv/#annotations
-   * all of them are now supported
+   * all of them are supported
 * additionally
    * column names that start with _ are OOTB ignored, unless: _measurement, _time, _field, _value
       * _measurement:  measurement part
       * _time: timestamp part
       * _field: column that contains field name
       * _value: column that contains field value
-   * *#linetype* annotation indicates protocol line type for a column   
+   * *#linetype* annotation associated a particular csv column protocol with a line part
       * supported values are: _measurement_, _tag_, _time_, _ignore(d)_
       * default is =field= unless _field column is present (ignored then)
    * time column can be specified as an int64 number or in RFC3339 format
