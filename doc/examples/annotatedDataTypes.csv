@@ -1,5 +1,0 @@
-#datatype ,,string,double,boolean,long,unsignedLong,duration,
-#linepart measurement,tag,,,,,,time
-m,name,s,d,b,l,ul,dur,time
-test,annotatedDatatypes,str1,1.0,true,1,1,1ms,1
-test,annotatedDatatypes,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z

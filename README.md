@@ -51,33 +51,32 @@ cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669087000000000
 cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.7263631815907954 1582669081000000000
 cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000000000
 ```
-## Example 2 - Annotated CSV file
-*influx write --dry-run --file doc/examples/annotatedLinePart.csv*
+## Example 2 - Simple Annotated CSV file
+*influx write --dry-run --file doc/examples/annotatedLinepart.csv*
 
 ```bash
 #linepart measurement,tag,tag,field,field,time
-#default cpu,,,,,
 m,cpu,host,time_steal,usage_user,time
-,cpu1,rsavage.prod,0,2.7263631815907954,1482669077000000000
-,cpu1,rsavage.prod,0,2.247752247752248,1482669087000000000
-
+cpu,cpu1,rsavage.prod,0,2.7,1482669077000000000
+cpu,cpu1,rsavage.prod,0,2.2,1482669087000000000
 ```
 
-written line protocol
+written line protocol (all fields are of type double)
 ```
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.7 1482669077000000000
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 ```
 
 ## Example 3 - Annotated CSV file with Data Types
-*influx write --dry-run --file doc/examples/annotatedDataTypes.csv*
+*influx write --dry-run --file doc/examples/annotatedDatatype.csv*
 
 ```bash
 #datatype ,,string,double,boolean,long,unsignedLong,duration,
-#linepart measurement,tag,,,,,,time
+#linepart measurement,tag,,,,,,,time
+#default test,annotatedDatatypes,,,,,,
 m,name,s,d,b,l,ul,dur,time
-test,annotatedDatatypes,str1,1.0,true,1,1,1ms,1
-test,annotatedDatatypes,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
+,,str1,1.0,true,1,1,1ms,1
+,,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
 ```
 
 written line protocol
