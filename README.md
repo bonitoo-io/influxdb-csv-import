@@ -19,7 +19,7 @@ https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format 
    * time column can be specified as an int64 number or in RFC3339 format
 
 ## DRY RUN
-A new _--dry-run_ option helps to validate and tune CSV data.
+A new _--dry-run_ flag helps to validate and tune CSV data.
 
 ## Example 1 - Flux Query Result
 *influx write --file --dry-run doc/examples/fluxQueryResult.csv*
