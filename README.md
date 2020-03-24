@@ -3,12 +3,11 @@ CSV import to INFLUXDB
 
 See https://github.com/influxdata/influxdb/issues/17003
 
-## Resources
-* https://towardsdatascience.com/how-to-create-a-cli-in-golang-with-cobra-d729641c7177
-
 ## CSV Annotations
+CSV input is transformed to line protocol with the help of annotations
 * https://v2.docs.influxdata.com/v2.0/reference/syntax/annotated-csv/#annotations
-* plus 
+   * all of them are supported
+* additionally
    * column names that start with _ are ignored, unless: _measurement, _time, _field, _value
       * _measurement:  measurement part
       * _time: timestamp part
@@ -19,12 +18,9 @@ See https://github.com/influxdata/influxdb/issues/17003
       * default is =field= unless _field column is present (ignored then)
    * time column can be specified as an int64 number or in RFC3339 format
 
-## Example 0 - DRY RUN
-To emmit line protocol to standard output, set env variable _INFLUX_HOST_ to _-_ .
+## DRY RUN
+A new _--dry-run_ heps to validate and tune the CSV before writing to influx DB.
 
-```
-export INFLUX_HOST=-
-```
 
 ## Example 1 - Flux Query Result
 *influx write --file --dry-run doc/examples/fluxQueryResult.csv*
