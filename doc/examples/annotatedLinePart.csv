@@ -1,0 +1,5 @@
+#linepart measurement,tag,tag,field,field,time
+#default cpu,,,,,
+m,cpu,host,time_steal,usage_user,time
+,cpu1,rsavage.prod,0,2.7,1482669077000000000
+,cpu1,rsavage.prod,0,2.2,1482669087000000000
