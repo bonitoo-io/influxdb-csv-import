@@ -14,7 +14,8 @@ See https://github.com/influxdata/influxdb/issues/17003
       * _time: timestamp part
       * _field: column that contains field name
       * _value: column that contains field value
-   * =#linetype= annotation indicates protocol line type for a column: measurement, tag, time, ignore(d)
+   * *#linetype* annotation indicates protocol line type for a column   
+      * supported values are: _measurement_, _tag_, _time_, _ignore(d)_
       * default is =field= unless _field column is present (ignored then)
    * time column can be specified as an int64 number or in RFC3339 format
 
@@ -73,9 +74,9 @@ cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 
 ```bash
 #datatype ,string,double,boolean,long,unsignedLong,duration,
-_measurement,s,d,b,l,ul,dur,_time
-testTypes,"str1",1.0,true,1,1,1ms,1
-testTypes,"str2",2.0,false,2,2,2us,2020-01-11T10:10:10Z
+_measurement,s,d,b,l,ul,dur,_timego
+testTypes,str1,1.0,true,1,1,1ms,1
+testTypes,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
 ```
 
 written line protocol
