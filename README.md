@@ -1,14 +1,14 @@
 # influxdb-csv-import
-CSV import to INFLUXDB
+CSV data written to influx
 
-See https://github.com/influxdata/influxdb/issues/17003
+https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format for existing _influx write_ command.  CSV data on input are transformed to line protocol with the help of CSV annotations.
 
 ## CSV Annotations
-CSV input is transformed to line protocol with the help of annotations
+
 * https://v2.docs.influxdata.com/v2.0/reference/syntax/annotated-csv/#annotations
-   * all of them are supported
+   * all of them are now supported
 * additionally
-   * column names that start with _ are ignored, unless: _measurement, _time, _field, _value
+   * column names that start with _ are OOTB ignored, unless: _measurement, _time, _field, _value
       * _measurement:  measurement part
       * _time: timestamp part
       * _field: column that contains field name
@@ -19,8 +19,7 @@ CSV input is transformed to line protocol with the help of annotations
    * time column can be specified as an int64 number or in RFC3339 format
 
 ## DRY RUN
-A new _--dry-run_ heps to validate and tune the CSV before writing to influx DB.
-
+A new _--dry-run_ option helps to validate and tune CSV data.
 
 ## Example 1 - Flux Query Result
 *influx write --file --dry-run doc/examples/fluxQueryResult.csv*
