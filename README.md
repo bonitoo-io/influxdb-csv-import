@@ -26,7 +26,7 @@ export INFLUX_HOST=-
 ```
 
 ## Example 1 - Flux Query Result
-*influx write @doc/examples/fluxQueryResult.csv*
+*influx write --file  doc/examples/fluxQueryResult.csv*
 
 ```bash
 #group,false,false,true,true,false,false,true,true,true,true
@@ -51,7 +51,7 @@ cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.7263631815907954 158266908100
 cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000000000
 ```
 ## Example 2 - Annotated CSV line types
-*influx write @doc/examples/annotatedLineType.csv*
+*influx write --file doc/examples/annotatedLineType.csv*
 
 ```bash
 #linepart measurement,tag,tag,field,field,time
@@ -69,7 +69,7 @@ cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 ```
 
 ## Example 3 - Annotated CSV data types
-*influx write @doc/examples/annotatedDataTypes.csv*
+*influx write --file doc/examples/annotatedDataTypes.csv*
 
 ```bash
 #datatype ,string,double,boolean,long,unsignedLong,duration,
