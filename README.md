@@ -39,7 +39,7 @@ A new _--dry-run_ flag helps to validate and tune CSV data.
 ,,1,2020-02-25T22:17:54.068926364Z,2020-02-25T22:22:54.068926364Z,2020-02-25T22:18:01Z,2.7263631815907954,usage_user,cpu,cpu-total,tahoecity.prod
 ,,1,2020-02-25T22:17:54.068926364Z,2020-02-25T22:22:54.068926364Z,2020-02-25T22:18:11Z,2.247752247752248,usage_user,cpu,cpu-total,tahoecity.prod
 ```
-written line protocol
+line protocol data:
 ```
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669077000000000
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669087000000000
@@ -56,11 +56,12 @@ cpu,cpu1,rsavage.prod,0,2.7,1482669077000000000
 cpu,cpu1,rsavage.prod,0,2.2,1482669087000000000
 ```
 
-written line protocol (all fields are of type double)
+line protocol data: 
 ```
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.7 1482669077000000000
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 ```
+Note that all fields are of type double.
 
 ## Example 3 - Annotated CSV file with Data Types
 *influx write --dry-run --file doc/examples/annotatedDatatype.csv*
@@ -74,7 +75,7 @@ m,name,s,d,b,l,ul,dur,time
 ,,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
 ```
 
-written line protocol
+line protocol data: 
 ```
 test,name=annotatedDatatypes s="str1",d=1,b=true,l=1i,ul=1u,dur=1000000i 1
 test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 1578737410000000000
