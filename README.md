@@ -74,7 +74,7 @@ cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 
 ```bash
 #datatype ,string,double,boolean,long,unsignedLong,duration,
-_measurement,s,d,b,l,ul,dur,_timego
+_measurement,s,d,b,l,ul,dur,_time
 testTypes,str1,1.0,true,1,1,1ms,1
 testTypes,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
 ```
