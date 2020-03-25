@@ -19,10 +19,10 @@ https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format 
    * time column can be specified as an int64 number or in RFC3339 format
 
 ## DRY RUN
-A new _--dry-run_ flag helps to validate and tune CSV data.
+Run "write dryrun" command to write lines to stdout instead of InfluxDB. This "dryrun" command helps with validation and troubleshooting of CSV data.
 
 ## Example 1 - Flux Query Result
-*influx write --file --dry-run doc/examples/fluxQueryResult.csv*
+*influx write dryrun --file doc/examples/fluxQueryResult.csv*
 
 ```bash
 #group,false,false,true,true,false,false,true,true,true,true
@@ -47,7 +47,7 @@ cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.7263631815907954 158266908100
 cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000000000
 ```
 ## Example 2 - Simple Annotated CSV file
-*influx write --dry-run --file doc/examples/annotatedLinepart.csv*
+*influx write dryrun --file doc/examples/annotatedLinepart.csv*
 
 ```bash
 #linepart measurement,tag,tag,field,field,ignored,time
@@ -64,7 +64,7 @@ cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 Note that all fields are of type double.
 
 ## Example 3 - Annotated CSV file with Data Types
-*influx write --dry-run --file doc/examples/annotatedDatatype.csv*
+*influx write dryrun --file doc/examples/annotatedDatatype.csv*
 
 ```bash
 #datatype ,,string,double,boolean,long,unsignedLong,duration,
