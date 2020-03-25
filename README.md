@@ -55,10 +55,10 @@ cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000
 *influx write --dry-run --file doc/examples/annotatedLinepart.csv*
 
 ```bash
-#linepart measurement,tag,tag,field,field,time
-m,cpu,host,time_steal,usage_user,time
-cpu,cpu1,rsavage.prod,0,2.7,1482669077000000000
-cpu,cpu1,rsavage.prod,0,2.2,1482669087000000000
+#linepart measurement,tag,tag,field,field,ignored,time
+m,cpu,host,time_steal,usage_user,nothing,time
+cpu,cpu1,rsavage.prod,0,2.7,a,1482669077000000000
+cpu,cpu1,rsavage.prod,0,2.2,b,1482669087000000000
 ```
 
 written line protocol (all fields are of type double)
