@@ -1,30 +1,25 @@
 # influxdb-csv-import
-CSV import to INFLUXDB
+CSV data written to influx
 
-See https://github.com/influxdata/influxdb/issues/17003
-
-## Resources
-* https://towardsdatascience.com/how-to-create-a-cli-in-golang-with-cobra-d729641c7177
+https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format for existing _influx write_ command.  CSV data on input are transformed to line protocol with the help of CSV annotations.
 
 ## CSV Annotations
+
 * https://v2.docs.influxdata.com/v2.0/reference/syntax/annotated-csv/#annotations
-* plus 
-   * column names that start with _ are ignored, unless: _measurement, _time, _field, _value
+   * all of them are supported
+* additionally
+   * column names that start with _ are OOTB ignored, unless: _measurement, _time, _field, _value
       * _measurement:  measurement part
       * _time: timestamp part
       * _field: column that contains field name
       * _value: column that contains field value
-   * *#linetype* annotation indicates protocol line type for a column   
+   * *#linetype* annotation associated a particular csv column protocol with a line part
       * supported values are: _measurement_, _tag_, _time_, _ignore(d)_
       * default is =field= unless _field column is present (ignored then)
    * time column can be specified as an int64 number or in RFC3339 format
 
-## Example 0 - DRY RUN
-To emmit line protocol to standard output, set env variable _INFLUX_HOST_ to _-_ .
-
-```
-export INFLUX_HOST=-
-```
+## DRY RUN
+A new _--dry-run_ flag helps to validate and tune CSV data.
 
 ## Example 1 - Flux Query Result
 *influx write --file --dry-run doc/examples/fluxQueryResult.csv*
@@ -44,7 +39,7 @@ export INFLUX_HOST=-
 ,,1,2020-02-25T22:17:54.068926364Z,2020-02-25T22:22:54.068926364Z,2020-02-25T22:18:01Z,2.7263631815907954,usage_user,cpu,cpu-total,tahoecity.prod
 ,,1,2020-02-25T22:17:54.068926364Z,2020-02-25T22:22:54.068926364Z,2020-02-25T22:18:11Z,2.247752247752248,usage_user,cpu,cpu-total,tahoecity.prod
 ```
-written line protocol
+line protocol data:
 ```
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669077000000000
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669087000000000
@@ -61,11 +56,12 @@ cpu,cpu1,rsavage.prod,0,2.7,a,1482669077000000000
 cpu,cpu1,rsavage.prod,0,2.2,b,1482669087000000000
 ```
 
-written line protocol (all fields are of type double)
+line protocol data: 
 ```
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.7 1482669077000000000
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 ```
+Note that all fields are of type double.
 
 ## Example 3 - Annotated CSV file with Data Types
 *influx write --dry-run --file doc/examples/annotatedDatatype.csv*
@@ -79,7 +75,7 @@ m,name,s,d,b,l,ul,dur,time
 ,,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
 ```
 
-written line protocol
+line protocol data: 
 ```
 test,name=annotatedDatatypes s="str1",d=1,b=true,l=1i,ul=1u,dur=1000000i 1
 test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 1578737410000000000
