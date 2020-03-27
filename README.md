@@ -80,3 +80,9 @@ line protocol data:
 test,name=annotatedDatatypes s="str1",d=1,b=true,l=1i,ul=1u,dur=1000000i 1
 test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 1578737410000000000
 ```
+## Future ideas
+1. support multiple --header flags, these specify rows that are prepended
+2. support specification of date-format using go parse date
+3. support CSV files with "time" value in the header, such as
+   * https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_daily_reports/03-26-2020.csv
+   * https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases
