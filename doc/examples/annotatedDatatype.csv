@@ -1,5 +1,4 @@
-#datatype ,,string,double,boolean,long,unsignedLong,duration,
-#linepart measurement,tag,,,,,,,time
+#datatype measurement,tag,string,double,boolean,long,unsignedLong,duration,dateTime
 #default test,annotatedDatatypes,,,,,,
 m,name,s,d,b,l,ul,dur,time
 ,,str1,1.0,true,1,1,1ms,1

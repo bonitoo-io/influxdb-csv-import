@@ -9,14 +9,21 @@ https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format 
    * all of them are supported
 * additionally
    * column names that start with _ are OOTB ignored, unless: _measurement, _time, _field, _value
-      * _measurement:  measurement part
-      * _time: timestamp part
+      * _measurement:  name of measurement
+      * _time: time of measurement
       * _field: column that contains field name
       * _value: column that contains field value
-   * *#linetype* annotation associated a particular csv column protocol with a line part
-      * supported values are: _measurement_, _tag_, _time_, _ignore(d)_
-      * default is =field= unless _field column is present (ignored then)
-   * time column can be specified as an int64 number or in RFC3339 format
+   * *#datatype* annotation is enhanced with:
+      * to mark non-field data: 
+          * _measurement_, _tag_, _time_
+          * _ignore simply ignores the column
+          * _time_ is also supported, it is an alias for the existing _dateTime_
+          * _dateTime_ is either as a long (int64) number or RFC3339 format, this type is always used to represent time of measurement; or you can specify
+             * _dateTime:RFC3339_ for RFC3339 time
+             * _dateTime:number_ to expect a long number
+      * a _field_ data type can be used to let detect field's data type
+      * default datatype for a column is =field= unless _field column is present (ignored then)
+      * there can be at most 1 _dateTime_ column
 
 ## DRY RUN
 Run "write dryrun" command to write lines to stdout instead of InfluxDB. This "dryrun" command helps with validation and troubleshooting of CSV data.
@@ -50,7 +57,7 @@ cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000
 *influx write dryrun --file doc/examples/annotatedLinepart.csv*
 
 ```bash
-#linepart measurement,tag,tag,field,field,ignored,time
+#datatype measurement,tag,tag,double,double,ignored,dateTime:number
 m,cpu,host,time_steal,usage_user,nothing,time
 cpu,cpu1,rsavage.prod,0,2.7,a,1482669077000000000
 cpu,cpu1,rsavage.prod,0,2.2,b,1482669087000000000
@@ -61,14 +68,12 @@ line protocol data:
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.7 1482669077000000000
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 ```
-Note that all fields are of type double.
 
 ## Example 3 - Annotated CSV file with Data Types
 *influx write dryrun --file doc/examples/annotatedDatatype.csv*
 
 ```bash
-#datatype ,,string,double,boolean,long,unsignedLong,duration,
-#linepart measurement,tag,,,,,,,time
+#datatype measurement,tag,string,double,boolean,long,unsignedLong,duration,dateTime
 #default test,annotatedDatatypes,,,,,,
 m,name,s,d,b,l,ul,dur,time
 ,,str1,1.0,true,1,1,1ms,1
