@@ -65,9 +65,9 @@ func (state *lineReader) Read(p []byte) (n int, err error) {
 			state.finished = err
 			return state.Read(p)
 		}
-		state.csv.FieldsPerRecord = 0 // because every row can have different count of columns
+		state.csv.FieldsPerRecord = 0 // reset fields because every row can have different count of columns
 		if state.lineNumber == 1 && len(row) == 1 && strings.HasPrefix(row[0], "sep=") && len(row[0]) > 4 {
-			// supports separator specification on first line
+			// separator specified in the first line
 			state.csv.Comma = rune(row[0][4])
 			continue
 		}

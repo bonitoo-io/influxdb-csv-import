@@ -247,7 +247,7 @@ func (t *CsvTable) recomputeIndexes() {
 	t.indexed = true
 }
 
-// CreateLine produces a protocol line of the supplied row or returned error
+// CreateLine produces a protocol line out of the supplied row or returns error
 func (t *CsvTable) CreateLine(row []string) (line string, err error) {
 	buffer := make([]byte, 100)[:0]
 	buffer, err = t.AppendLine(buffer, row)
@@ -257,7 +257,7 @@ func (t *CsvTable) CreateLine(row []string) (line string, err error) {
 	return *(*string)(unsafe.Pointer(&buffer)), nil
 }
 
-// AppendLine appends a protocol line to the supplied buffer and returns appended buffer and error indication
+// AppendLine appends a protocol line to the supplied buffer and returns appended buffer or an error if any
 func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 	if t.computeIndexes() {
 		// validate column data types
@@ -290,7 +290,7 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 	buffer = append(buffer, escapeMeasurement(measurement)...)
 	for _, tag := range t.cachedTags {
 		value := orDefault(row[tag.Index], tag.DefaultValue)
-		if tag.Index < len(row) && len(row[tag.Index]) > 0 {
+		if tag.Index < len(row) && len(value) > 0 {
 			buffer = append(buffer, ',')
 			buffer = append(buffer, tag.LineLabel()...)
 			buffer = append(buffer, '=')
@@ -349,11 +349,11 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 			if len(dataType) == 0 {
 				//try to detect data type
 				if strings.Contains(timeVal, ".") {
-					dataType = "dateTime:RFC3339Nano"
+					dataType = dateTimeDatatypeRFC3339Nano
 				} else if strings.Contains(timeVal, "-") {
-					dataType = "dateTime:RFC3339"
+					dataType = dateTimeDatatypeRFC3339
 				} else {
-					dataType = "timestamp"
+					dataType = dateTimeDatatypeNumber
 				}
 			}
 			buffer = append(buffer, ' ')
