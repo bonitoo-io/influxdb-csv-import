@@ -1,11 +1,8 @@
 package write
 
 import (
-	"bytes"
 	"encoding/csv"
 	"io"
-	"log"
-	"os"
 	"strings"
 	"testing"
 
@@ -82,8 +79,7 @@ func TestQueryResult(t *testing.T) {
 							// some traling data are missing
 							require.Equal(t, col.DefaultValue, "")
 						}
-						require.Equal(t, col.DataType, rows[i-3][j])
-						require.Equal(t, col.LinePart == linePartTag, rows[i-4][j] == "true")
+						require.Equal(t, col.DataType, rows[i-3][j], "row %d, col %d", i-3, j)
 					}
 				}
 				// verify cached values
@@ -159,67 +155,88 @@ func TestCsvData(t *testing.T) {
 		},
 		{
 			"annotated1",
-			"#linepart measurement,,\nmeasurement,a,b\ncpu,1,2",
+			"#datatype measurement,,\nmeasurement,a,b\ncpu,1,2",
 			"cpu a=1,b=2",
 		},
 		{
 			"annotated2",
-			"#linepart measurement,tag,field\nmeasurement,a,b\ncpu,1,2",
+			"#datatype measurement,tag,field\nmeasurement,a,b\ncpu,1,2",
 			"cpu,a=1 b=2",
 		},
 		{
 			"annotated3",
-			"#linepart measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2,3",
+			"#datatype measurement,tag,dateTime,field\nmeasurement,a,b,time\ncpu,1,2,3",
 			"cpu,a=1 time=3 2",
 		},
 		{
 			"annotated3_detectedTime1",
-			"#linepart measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-01-10T10:10:10Z,3",
+			"#datatype measurement,tag,dateTime,field\nmeasurement,a,b,time\ncpu,1,2020-01-10T10:10:10Z,3",
 			"cpu,a=1 time=3 1578651010000000000",
 		},
 		{
 			"annotated3_detectedTime2",
-			"#linepart measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-01-10T10:10:10.0Z,3",
+			"#datatype measurement,tag,dateTime,field\nmeasurement,a,b,time\ncpu,1,2020-01-10T10:10:10.0Z,3",
 			"cpu,a=1 time=3 1578651010000000000",
 		},
 		{
 			"annotated4",
-			"#linepart measurement,tag,ignore,field\nmeasurement,a,b,time\ncpu,1,2,3",
+			"#datatype measurement,tag,ignore,field\nmeasurement,a,b,time\ncpu,1,2,3",
 			"cpu,a=1 time=3",
 		},
 		{
 			"annotated5",
-			"#linepart measurement,tag,ignore,field\nmeasurement,a,b,time\ncpu,1,2,3",
+			"#datatype measurement,tag,ignore,field\nmeasurement,a,b,time\ncpu,1,2,3",
 			"cpu,a=1 time=3",
 		},
 		{
 			"annotated6",
-			"#linepart measurement,tag,ignore,field\n" +
-				"#lineparta tag,tag,\n" + // this must be ignored since it not a control comment
+			"#datatype measurement,tag,ignore,field\n" +
+				"#datatypea tag,tag,\n" + // this must be ignored since it not a supported annotation
 				"measurement,a,b,time\ncpu,1,2,3",
 			"cpu,a=1 time=3",
 		},
 		{
 			"annotated7",
-			"#linepart measurement,,\n#datatype ,dateTime:RFC3339Nano,\nmeasurement,a,b\ncpu,2020-01-10T10:10:10.0Z,2",
-			"cpu a=1578651010000000000,b=2",
+			"#datatype measurement,dateTime,\nmeasurement,a,b\ncpu,2020-01-10T10:10:10.0Z,2",
+			"cpu b=2 1578651010000000000",
 		},
 		{
 			"annotated8",
-			"#linepart measurement,,,field\nmeasurement,_field,_value,other\ncpu,a,1,2",
+			"#datatype measurement,,,field\nmeasurement,_field,_value,other\ncpu,a,1,2",
 			"cpu a=1,other=2",
 		},
 		{
 			"annotated9_sortedTags",
-			"#linepart measurement,tag,tag,time,field\nmeasurement,b,a,c,time\ncpu,1,2,3,4",
+			"#datatype measurement,tag,tag,time,field\nmeasurement,b,a,c,time\ncpu,1,2,3,4",
 			"cpu,a=2,b=1 time=4 3",
 		},
 		{
-			"allTypes1",
+			"allFieldTypes",
+			"#datatype measurement,string,double,boolean,long,unsignedLong,duration,base64Binary,dateTime\n" +
+				"m,s,d,b,l,ul,dur,by,d1,d2,time\n" +
+				`cpu,"str",1.0,true,1,1,1ms,YWFh,1`,
+			"cpu s=\"str\",d=1,b=true,l=1i,ul=1u,dur=1000000i,by=YWFh 1",
+		},
+		{
+			"allFieldTypes",
+			"#datatype measurement,string,double,boolean,long,unsignedLong,duration,base64Binary,dateTime\n" +
+				"m,s,d,b,l,ul,dur,by,d1,d2,time\n" +
+				`cpu,"str",1.0,true,1,1,1ms,YWFh,1`,
+			"cpu s=\"str\",d=1,b=true,l=1i,ul=1u,dur=1000000i,by=YWFh 1",
+		},
+		{
+			"allFieldTypes_ignoreAdditionalDateTimes",
 			"#datatype ,string,double,boolean,long,unsignedLong,duration,base64Binary,dateTime:RFC3339,dateTime:RFC3339Nano,\n" +
 				"_measurement,s,d,b,l,ul,dur,by,d1,d2,_time\n" +
 				`cpu,"str",1.0,true,1,1,1ms,YWFh,2020-01-10T10:10:10Z,2020-01-10T10:10:10Z,1`,
-			"cpu s=\"str\",d=1,b=true,l=1i,ul=1u,dur=1000000i,by=YWFh,d1=1578651010000000000,d2=1578651010000000000 1",
+			"cpu s=\"str\",d=1,b=true,l=1i,ul=1u,dur=1000000i,by=YWFh 1",
+		},
+		{
+			"allExtraDataTypes",
+			"#datatype measurement,tag,field,ignored,dateTime\n" +
+				"m,t,f,i,dt\n" +
+				`cpu,myTag,0,myIgnored,1`,
+			"cpu,t=myTag f=0 1",
 		},
 		{
 			"allTypes_escaped",
@@ -230,7 +247,7 @@ func TestCsvData(t *testing.T) {
 		},
 		{
 			"default_values",
-			"#default cpu,yes,0,1\n#linepart ,tag,,\n_measurement,test,col1,_time\n,,,",
+			"#default cpu,yes,0,1\n#datatype ,tag,,\n_measurement,test,col1,_time\n,,,",
 			"cpu,test=yes col1=0 1",
 		},
 	}
@@ -263,19 +280,19 @@ func TestCsvData_dataErrors(t *testing.T) {
 	}{
 		{
 			"error_1_is_not_dateTime:RFC3339",
-			"#linepart measurement,,\n#datatype ,dateTime:RFC3339,\nmeasurement,a,b\ncpu,1,2",
+			"#datatype measurement,,\n#datatype ,dateTime:RFC3339,\nmeasurement,a,b\ncpu,1,2",
 		},
 		{
 			"error_a_fieldValue_is_not_long",
-			"#linepart measurement,,\n#datatype ,long,\nmeasurement,_value,_field\ncpu,a,count",
+			"#datatype measurement,,\n#datatype ,long,\nmeasurement,_value,_field\ncpu,a,count",
 		},
 		{
 			"error_a_is_not_long",
-			"#linepart measurement,,\n#datatype ,long,\nmeasurement,a,b\ncpu,a,2",
+			"#datatype measurement,,\n#datatype ,long,\nmeasurement,a,b\ncpu,a,2",
 		},
 		{
 			"error_time_is_not_time",
-			"#linepart measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-10,3",
+			"#datatype measurement,tag,time,field\nmeasurement,a,b,time\ncpu,1,2020-10,3",
 		},
 		{
 			"error_no_measurement",
@@ -316,48 +333,6 @@ func TestCsvData_dataErrors(t *testing.T) {
 			for _, col := range table.Columns() {
 				require.Equal(t, col.Label, col.LineLabel())
 			}
-		})
-	}
-}
-
-// TestCsvData_dataErrors validates table data errors
-func TestCsvData_logWarnings(t *testing.T) {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer func() {
-		log.SetOutput(os.Stderr)
-	}()
-
-	var tests = []struct {
-		name string
-		csv  string
-		log  string
-	}{
-		{
-			"warning_unsupported_linepart",
-			"#linepart ,,whatever\n_measurement,_field,_value\na,1,2",
-			"unsupported line type: whatever",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			buf.Reset()
-			rows := readCsv(t, test.csv)
-			table := CsvTable{}
-			for _, row := range rows {
-				rowProcessed := table.AddRow(row)
-				if rowProcessed {
-					_, err := table.CreateLine(row)
-					if err != nil {
-						t.Fail()
-					}
-				}
-			}
-			out := buf.String()
-			warningIndex := strings.Index(out, "WARNING:")
-			require.Greater(t, warningIndex, 0)
-			require.Equal(t, test.log, out[warningIndex+len("WARNING:")+1:len(out)-1])
 		})
 	}
 }
