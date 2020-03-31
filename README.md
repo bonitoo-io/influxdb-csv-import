@@ -95,10 +95,10 @@ Further set of enhancements that helps to process CSV files without actually cha
    
 - `--header` option in `influx write` command let your add annotation or header rows without changing the data on input (supplied via `--file` or stdin)
    - you can supply more `--header` options, the rows will be prepended in the order as they appear on command line
-- `#constant` annotation adds a constant column to the data
+- a new `#constant` annotation adds a constant column to the data, so you can simply set measurement, time, field or tag of every row you import independently on the data you passed in
    - the format of a constant annotation row is `#constant,datatype,name,value`, so you have to specify a supported datatype, column name and a constant value
    - `column` can be omitted for _dateTime_ or _measurement_ columns, so the annotation can be simply `#constant,measurement,cpu`
-   - note that you can add constant annotations to existing data using `--header` options of `influx write` cli
+   - note that you can add constant annotations to existing data using `--header` option of `influx write` cli
 - a measurement column can be of `dateTime:format` datatype to use a custom _format_ to parse column values
    - the format layout is described in https://golang.org/pkg/time layout, for example `dateTime:2006-01-02` parses 4-digit-year , '-' , 2-digit month , 2 digit day of month
    - `dateTime:RFC3339`, `dateTime:RFC3339Nano` and `dateTime:number` are predefined formats
