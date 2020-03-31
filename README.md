@@ -3,20 +3,15 @@ CSV data written to influx
 
 https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format for existing _influx write_ command.  CSV data on input are transformed to line protocol with the help of CSV annotations.
 
-## CSV Annotations
-
+## DONE: STEP 0 - already merged to influxdata/influxdb
+### CSV Annotations
 * https://v2.docs.influxdata.com/v2.0/reference/syntax/annotated-csv/#annotations
    * all of them are supported
 * additionally
-   * column names that start with _ are OOTB ignored, unless: _measurement, _time, _field, _value
-      * _measurement:  name of measurement
-      * _time: time of measurement
-      * _field: column that contains field name
-      * _value: column that contains field value
    * *#datatype* annotation is enhanced with:
       * to mark non-field data: 
           * _measurement_, _tag_, _time_
-          * _ignore simply ignores the column
+          * _ignore_ simply ignores the column
           * _time_ is also supported, it is an alias for the existing _dateTime_
           * _dateTime_ is either as a long (int64) number or RFC3339 format, this type is always used to represent time of measurement; or you can specify
              * _dateTime:RFC3339_ for RFC3339 time
@@ -24,11 +19,20 @@ https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format 
       * a _field_ data type can be used to let detect field's data type
       * default datatype for a column is =field= unless _field column is present (ignored then)
       * there can be at most 1 _dateTime_ column
-
-## DRY RUN
+   * the following columns will have an extra semantics: _measurement, _time, _field, _value
+      * _measurement:  name of measurement
+      * _time: time of measurement
+      * _field: column that contains field name
+      * _value: column that contains field value
+* new `influx write` flags
+```sh
+  -f, --file string        The path to the file to import
+      --format string      Input format, either lp (Line Protocol) or csv (Comma Separated Values). Defaults to lp unless '.csv' extension
+```  
+### DRY RUN
 Run "write dryrun" command to write lines to stdout instead of InfluxDB. This "dryrun" command helps with validation and troubleshooting of CSV data.
 
-## Example 1 - Flux Query Result
+### Example 1 - Flux Query Result
 *influx write dryrun --file doc/examples/fluxQueryResult.csv*
 
 ```bash
@@ -53,7 +57,7 @@ cpu,cpu=cpu1,host=rsavage.prod time_steal=0 1582669087000000000
 cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.7263631815907954 1582669081000000000
 cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000000000
 ```
-## Example 2 - Simple Annotated CSV file
+### Example 2 - Simple Annotated CSV file
 *influx write dryrun --file doc/examples/annotatedLinepart.csv*
 
 ```bash
@@ -69,7 +73,7 @@ cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.7 1482669077000000000
 cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
 ```
 
-## Example 3 - Annotated CSV file with Data Types
+### Example 3 - Annotated CSV file with Data Types
 *influx write dryrun --file doc/examples/annotatedDatatype.csv*
 
 ```bash
@@ -85,9 +89,34 @@ line protocol data:
 test,name=annotatedDatatypes s="str1",d=1,b=true,l=1i,ul=1u,dur=1000000i 1
 test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 1578737410000000000
 ```
-## Future ideas
-1. support multiple --header flags, these specify rows that are prepended
-2. support specification of date-format using go parse date
-3. support CSV files with "time" value in the header, such as
-   * https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_daily_reports/03-26-2020.csv
-   * https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases
+
+### TODO STEP 1 - influxdata/influxdb
+Further set of enhancements that helps to process CSV files without actually changing them:
+   
+- `--header` option in `influx write` command let your add annotation or header rows without changing the data on input (supplied via `--file` or stdin)
+- `#constant` annotation adds a constant column to the data
+   - the format of a constant annotation row is `#constant,datatype,name,value`, so you have to specify a supported datatype, column name and a constant value
+   - `column` can be omitted for _dateTime_ or _measurement_ columns, so the annotation can be simply `#constant,measurement,cpu`
+   - note that you can add constant annotations to existing data using `--header` options of `influx write` cli
+- a measurement column can be of `dateTime:format` datatype to use a custom _format_ to parse column values
+   - the format layout is described in https://golang.org/pkg/time layout, for example `dateTime:2006-01-02` parses 4-digit-year , '-' , 2-digit month , 2 digit day of month
+   - `dateTime:RFC3339`, `dateTime:RFC3339Nano` and `dateTime:number` are predefined formats
+      - _RFC3339 format_ is 2006-01-02T15:04:05Z07:00
+      - _RFC3339Nano_ format is 2006-01-02T15:04:05.999999999Z07:00
+      - _number_ represent UTCs time since epoch in nanoseconds
+- a _double_, _long_ or _unsignedLong_ field column can also have `format` 
+   - the `format` is a single character that is used to separate integer and fractional part (usually `.` or `,`) of the number followed by additional characters that are ignored (such as as `, _`), these characters are ussually used to separate large numbers into groups
+   - for example `double:,.` is a double data type that parses number from Spanish locale, where numbers look like `3.494.826.157,123`
+   - for _long_ or _unsignedLong_ types, everything after and including a fraction character is ignored, for example `double:,.` will parse `3.494.826.157,123` as `3.494.826157`
+   - note that you have to escape column delimiters when they appear in a column value, for example
+      - `#constant,"double:,.",myColumn,"1,234.011"`
+- a CSV file can start with a line `sep=;` to inform about a character that is used to separate columns in data rows, by default `,` is used as a column separator
+- `--debug` and `--logCsvErrors` options helps with troubleshooting of CSV conversions
+   - `--debug` prints to stderr debugging information about columns that are used to create protocol lines out of csv data rows
+   - `--logCsvErrors` prints CSV data errors to stderr and continue with CSV processing
+      - any error stops the processing without this option specified
+
+
+## ToDo
+1. support multiple --file flags
+1. custom number format, so that some characters can be ignored (space, comma) and some characters 
