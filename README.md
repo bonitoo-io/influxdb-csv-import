@@ -1,9 +1,9 @@
 # influxdb-csv-import
 CSV data written to influx
 
-https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format for existing _influx write_ command.  CSV data on input are transformed to line protocol with the help of CSV annotations.
 
-## DONE: STEP 0 - already merged to influxdata/influxdb
+## DONE: STEP 1 - merged to influxdata/influxdb
+https://github.com/influxdata/influxdb/issues/17003 introduces a new CSV format for existing _influx write_ command.  CSV data on input are transformed to line protocol with the help of CSV annotations.
 ### CSV Annotations
 * https://v2.docs.influxdata.com/v2.0/reference/syntax/annotated-csv/#annotations
    * all of them are supported
@@ -90,10 +90,11 @@ test,name=annotatedDatatypes s="str1",d=1,b=true,l=1i,ul=1u,dur=1000000i 1
 test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 1578737410000000000
 ```
 
-### TODO STEP 1 - influxdata/influxdb
+## TODO: STEP 2
 Further set of enhancements that helps to process CSV files without actually changing them:
    
 - `--header` option in `influx write` command let your add annotation or header rows without changing the data on input (supplied via `--file` or stdin)
+   - you can supply more `--header` options, the rows will be prepended in the order as they appear on command line
 - `#constant` annotation adds a constant column to the data
    - the format of a constant annotation row is `#constant,datatype,name,value`, so you have to specify a supported datatype, column name and a constant value
    - `column` can be omitted for _dateTime_ or _measurement_ columns, so the annotation can be simply `#constant,measurement,cpu`
@@ -115,8 +116,3 @@ Further set of enhancements that helps to process CSV files without actually cha
    - `--debug` prints to stderr debugging information about columns that are used to create protocol lines out of csv data rows
    - `--logCsvErrors` prints CSV data errors to stderr and continue with CSV processing
       - any error stops the processing without this option specified
-
-
-## ToDo
-1. support multiple --file flags
-1. custom number format, so that some characters can be ignored (space, comma) and some characters 
