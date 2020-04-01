@@ -91,28 +91,7 @@ test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 157873741
 ```
 
 ## TODO: STEP 2
-Further set of enhancements that helps to process CSV files without actually changing them:
+Further set of enhancements that helps to process CSV files without actually changing them are described in
+https://github.com/influxdata/influxdb/issues/17004 .
    
-- `--header` option in `influx write` command let your add annotation or header rows without changing the data on input (supplied via `--file` or stdin)
-   - you can supply more `--header` options, the rows will be prepended in the order as they appear on command line
-- a new `#constant` annotation adds a constant column to the data, so you can simply set measurement, time, field or tag of every row you import independently on the data you passed in
-   - the format of a constant annotation row is `#constant,datatype,name,value`, so you have to specify a supported datatype, column name and a constant value
-   - `column` can be omitted for _dateTime_ or _measurement_ columns, so the annotation can be simply `#constant,measurement,cpu`
-   - note that you can add constant annotations to existing data using `--header` option of `influx write` cli
-- a measurement column can be of `dateTime:format` datatype to use a custom _format_ to parse column values
-   - the format layout is described in https://golang.org/pkg/time layout, for example `dateTime:2006-01-02` parses 4-digit-year , '-' , 2-digit month , 2 digit day of month
-   - `dateTime:RFC3339`, `dateTime:RFC3339Nano` and `dateTime:number` are predefined formats
-      - _RFC3339 format_ is 2006-01-02T15:04:05Z07:00
-      - _RFC3339Nano_ format is 2006-01-02T15:04:05.999999999Z07:00
-      - _number_ represent UTCs time since epoch in nanoseconds
-- a _double_, _long_ or _unsignedLong_ field column can also have `format` 
-   - the `format` is a single character that is used to separate integer and fractional part (usually `.` or `,`) of the number followed by additional characters that are ignored (such as as `, _`), these characters are ussually used to separate large numbers into groups
-   - for example `double:,.` is a double data type that parses number from Spanish locale, where numbers look like `3.494.826.157,123`
-   - for _long_ or _unsignedLong_ types, everything after and including a fraction character is ignored, for example `double:,.` will parse `3.494.826.157,123` as `3.494.826157`
-   - note that you have to escape column delimiters when they appear in a column value, for example
-      - `#constant,"double:,.",myColumn,"1,234.011"`
-- a CSV file can start with a line `sep=;` to inform about a character that is used to separate columns in data rows, by default `,` is used as a column separator
-- `--debug` and `--logCsvErrors` options helps with troubleshooting of CSV conversions
-   - `--debug` prints to stderr debugging information about columns that are used to create protocol lines out of csv data rows
-   - `--logCsvErrors` prints CSV data errors to stderr and continue with CSV processing
-      - any error stops the processing without this option specified
+### TODO More examples
