@@ -93,7 +93,7 @@ test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 157873741
 ## STEP 2
 These examples are related to https://github.com/influxdata/influxdb/issues/17004
 
-### Modified: Example 2 - Simple CSV file
+### Extended: Example 2 - Simple CSV file
 *influx write dryrun --file doc/examples/annotatedSimple.csv*
 
 ```bash
@@ -118,7 +118,7 @@ cpu,cpu1,rsavage.prod,0,2.2,b,1482669087000000000
 ```
 *influx write dryrun --file doc/examples/labelsWithDataTypes_labels.csv*
 
-### Modified: Example 3 - Data Types with default values
+### Extended: Example 3 - Data Types with default values
 *influx write dryrun --file doc/examples/annotatedDatatype.csv*
 
 ```bash
