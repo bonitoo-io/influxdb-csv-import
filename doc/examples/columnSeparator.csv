@@ -1,0 +1,7 @@
+sep=;
+m|measurement;available|boolean:y,Y:|n;dt|dateTime:number
+test;nil;1
+test;N;2
+test;";";3
+test;;4
+test;Y;5

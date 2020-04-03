@@ -183,8 +183,29 @@ line protocol data:
 test2 s="unknown" 0
 test2 s="Y"
 ```
+### Example 5 - Custom column separator
+*influx write dryrun --file doc/examples/columnSeparator.csv*
+```
+sep=;
+m|measurement;available|boolean:y,Y:|n;dt|dateTime:number
+test;nil;1
+test;N;2
+test;";";3
+test;;4
+test;Y;5
+```
+   - the first line can define a column separator character for next lines, here: `;`
+   - other lines use this separator, `available|boolean:y,Y` does not need to be wrapped in double quotes
 
-### Example 5 - CSV conversion troubleshooting
+line protocol data:
+```
+test available=false 1
+test available=false 2
+test available=false 3
+test available=false 4
+test available=true 5
+```
+### Example 6 - CSV conversion troubleshooting
 `influx write dryrun` helps with troubleshooting together with the following options
    - `--debug` 
       - prints out internal representation of command line arguments including the default values for the flags that drive CSV processing
@@ -195,10 +216,16 @@ test2 s="Y"
 
 Having csv input:
 ```
+m|measurement,usage_user|double
+cpu,2.7
+cpu,nil
+cpu,
+,2.9
 ```
 
 *influx write dryrun --skipRowOnError --file doc/examples/troubleshooting.csv 2>/dev/null*
 ```
+cpu usage_user=2.7
 ```
 
 *influx write dryrun --skipRowOnError --file doc/examples/troubleshooting.csv 1>/dev/null*
