@@ -58,7 +58,7 @@ cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.7263631815907954 158266908100
 cpu,cpu=cpu-total,host=tahoecity.prod usage_user=2.247752247752248 1582669091000000000
 ```
 ### Example 2 - Simple Annotated CSV file
-*influx write dryrun --file doc/examples/annotatedLinepart.csv*
+*influx write dryrun --file doc/examples/annotatedSimple.csv*
 
 ```bash
 #datatype measurement,tag,tag,double,double,ignored,dateTime:number
@@ -90,29 +90,120 @@ test,name=annotatedDatatypes s="str1",d=1,b=true,l=1i,ul=1u,dur=1000000i 1
 test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 1578737410000000000
 ```
 
-## TODO: STEP 2
-Further set of enhancements that helps to process CSV files without actually changing them:
-   
-- `--header` option in `influx write` command let your add annotation or header rows without changing the data on input (supplied via `--file` or stdin)
-   - you can supply more `--header` options, the rows will be prepended in the order as they appear on command line
-- a new `#constant` annotation adds a constant column to the data, so you can simply set measurement, time, field or tag of every row you import independently on the data you passed in
-   - the format of a constant annotation row is `#constant,datatype,name,value`, so you have to specify a supported datatype, column name and a constant value
-   - `column` can be omitted for _dateTime_ or _measurement_ columns, so the annotation can be simply `#constant,measurement,cpu`
-   - note that you can add constant annotations to existing data using `--header` option of `influx write` cli
-- a measurement column can be of `dateTime:format` datatype to use a custom _format_ to parse column values
-   - the format layout is described in https://golang.org/pkg/time layout, for example `dateTime:2006-01-02` parses 4-digit-year , '-' , 2-digit month , 2 digit day of month
-   - `dateTime:RFC3339`, `dateTime:RFC3339Nano` and `dateTime:number` are predefined formats
-      - _RFC3339 format_ is 2006-01-02T15:04:05Z07:00
-      - _RFC3339Nano_ format is 2006-01-02T15:04:05.999999999Z07:00
-      - _number_ represent UTCs time since epoch in nanoseconds
-- a _double_, _long_ or _unsignedLong_ field column can also have `format` 
-   - the `format` is a single character that is used to separate integer and fractional part (usually `.` or `,`) of the number followed by additional characters that are ignored (such as as `, _`), these characters are ussually used to separate large numbers into groups
-   - for example `double:,.` is a double data type that parses number from Spanish locale, where numbers look like `3.494.826.157,123`
-   - for _long_ or _unsignedLong_ types, everything after and including a fraction character is ignored, for example `double:,.` will parse `3.494.826.157,123` as `3.494.826157`
-   - note that you have to escape column delimiters when they appear in a column value, for example
-      - `#constant,"double:,.",myColumn,"1,234.011"`
-- a CSV file can start with a line `sep=;` to inform about a character that is used to separate columns in data rows, by default `,` is used as a column separator
-- `--debug` and `--logCsvErrors` options helps with troubleshooting of CSV conversions
-   - `--debug` prints to stderr debugging information about columns that are used to create protocol lines out of csv data rows
-   - `--logCsvErrors` prints CSV data errors to stderr and continue with CSV processing
-      - any error stops the processing without this option specified
+## STEP 2
+These examples are related to https://github.com/influxdata/influxdb/issues/17004
+
+### Modified: Example 2 - Simple CSV file
+*influx write dryrun --file doc/examples/annotatedSimple.csv*
+
+```bash
+#datatype measurement,tag,tag,double,double,ignored,dateTime:number
+m,cpu,host,time_steal,usage_user,nothing,time
+cpu,cpu1,rsavage.prod,0,2.7,a,1482669077000000000
+cpu,cpu1,rsavage.prod,0,2.2,b,1482669087000000000
+```
+
+line protocol data: 
+```
+cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.7 1482669077000000000
+cpu,cpu=cpu1,host=rsavage.prod time_steal=0,usage_user=2.2 1482669087000000000
+```
+
+Data type can be supplied in the column name, the CSV can be shortened to:
+
+```
+m|measurement,cpu|tag,host|tag,time_steal|double,usage_user|double,nothing|ignored,time|dateTime:number
+cpu,cpu1,rsavage.prod,0,2.7,a,1482669077000000000
+cpu,cpu1,rsavage.prod,0,2.2,b,1482669087000000000
+```
+*influx write dryrun --file doc/examples/labelsWithDataTypes_labels.csv*
+
+### Modified: Example 3 - Data Types with default values
+*influx write dryrun --file doc/examples/annotatedDatatype.csv*
+
+```bash
+#datatype measurement,tag,string,double,boolean,long,unsignedLong,duration,dateTime
+#default test,annotatedDatatypes,,,,,,
+m,name,s,d,b,l,ul,dur,time
+,,str1,1.0,true,1,1,1ms,1
+,,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
+```
+
+line protocol data: 
+```
+test,name=annotatedDatatypes s="str1",d=1,b=true,l=1i,ul=1u,dur=1000000i 1
+test,name=annotatedDatatypes s="str2",d=2,b=false,l=2i,ul=2u,dur=2000i 1578737410000000000
+```
+
+Default value can be supplied in the column label after data type, the CSV could be also:
+
+```
+m|measurement|test,name|tag|annotatedDatatypes,s|string,d|double,b|boolean,l|long,ul|unsignedLong,dur|duration,time|dateTime
+,,str1,1.0,true,1,1,1ms,1
+,,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z
+```
+*influx write dryrun --file doc/examples/annotatedDatatype_labels.csv*
+
+### Example 4 - Advanced usage
+*influx write dryrun --file doc/examples/datetypeFormats_labels.csv*
+
+```
+#constant measurement,test
+#constant tag,name,datetypeFormats
+#timezone -0500
+t|dateTime:2006-01-02|1970-01-02,"d|double:,. ","b|boolean:y,Y:n,N|y"
+1970-01-01,"123.456,78",
+,"123 456,78",Y
+```
+   - measurement and extra tags is defined using the `#constant` annotation
+   - timezone for dateTime is to `-0500` (EST)
+   - `t` column is of `dateTime` data type of format is `2006-01-02`, default value is _January 2nd 1970_
+   - `d` column is of `double` data type with `,` as a fraction delimiter and `. ` as ignored separators that  used to visually separate large numbers into groups
+   - `b` column os of `boolean` data type that considers `y` or `Y` truthy, `n` or `N` falsy and empty column values as truthy 
+
+
+line protocol data:
+```
+test,name=datetypeFormats d=123456.78,b=true 18000000000000
+test,name=datetypeFormats d=123456.78,b=true 104400000000000
+```
+
+You can prepend and/or remove first lines from input data using command line options. You can also 
+override column name and define extra annotations that drive data processing. For example:
+
+*influx write dryrun --skipHeader=4 --header "#constant measurement,test2" --header "t|dateTime:2006-01-02,_|ignored,s|string|unknown" --file doc/examples/datetypeFormats_labels.csv*
+    - removes the first 4 lines from input and prepends the following that define
+       - measurement of the data
+       - column header row with 
+          - custom dateTime format without a default value
+          - string column with a default value
+
+line protocol data:
+```
+test2 s="unknown" 0
+test2 s="Y"
+```
+
+### Example 5 - CSV conversion troubleshooting
+`influx write dryrun` helps with troubleshooting together with the following options
+   - `--debug` 
+      - prints out internal representation of command line arguments including the default values for the flags that drive CSV processing
+      - prints out metadata about CSV columns that used for processing
+   - `--skipRowOnError`
+      - if a row cannot be parsed, it is ignored and the parsing error is printed to to stderr
+      - any error stop the processing without this option present
+
+Having csv input:
+```
+```
+
+*influx write dryrun --skipRowOnError --file doc/examples/troubleshooting.csv 2>/dev/null*
+```
+```
+
+*influx write dryrun --skipRowOnError --file doc/examples/troubleshooting.csv 1>/dev/null*
+```
+2020/04/03 15:14:51 line 3: column 'usage_user': strconv.ParseFloat: parsing "nil": invalid syntax
+2020/04/03 15:14:51 line 4: no field data found
+2020/04/03 15:14:51 line 5: column 'm': no measurement supplied
+```

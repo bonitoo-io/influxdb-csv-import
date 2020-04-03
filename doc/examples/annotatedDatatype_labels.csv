@@ -1,0 +1,3 @@
+m|measurement|test,name|tag|annotatedDatatypes,s|string,d|double,b|boolean,l|long,ul|unsignedLong,dur|duration,time|dateTime
+,,str1,1.0,true,1,1,1ms,1
+,,str2,2.0,false,2,2,2us,2020-01-11T10:10:10Z

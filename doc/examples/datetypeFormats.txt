@@ -1,0 +1,2 @@
+test,name=datetypeFormats d=123456.78,b=true 18000000000000
+test,name=datetypeFormats d=123456.78,b=true 104400000000000

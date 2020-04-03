@@ -1,0 +1,3 @@
+m|measurement,cpu|tag,host|tag,time_steal|double,usage_user|double,nothing|ignored,time|dateTime:number
+cpu,cpu1,rsavage.prod,0,2.7,a,1482669077000000000
+cpu,cpu1,rsavage.prod,0,2.2,b,1482669087000000000

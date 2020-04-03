@@ -1,0 +1,7 @@
+#constant measurement,test
+#constant tag,name,datetypeFormats
+#timezone -0500
+#datatype dateTime:2006-01-02|1970-01-02,"double:,. ","boolean:y,Y:n,N|y"
+t,d,b
+1970-01-01,"123.456,78",
+,"123 456,78",Y
