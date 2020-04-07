@@ -212,7 +212,7 @@ test available=true 5
       - prints out metadata about CSV columns that used for processing
    - `--skipRowOnError`
       - if a row cannot be parsed, it is ignored and the parsing error is printed to to stderr
-      - any error stop the processing without this option present
+      - any error stops the processing without this option
 
 Having csv input:
 ```
